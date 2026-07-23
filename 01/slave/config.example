@@ -1,0 +1,2 @@
+SLAVE_PORT=8081
+SLAVE_DB=slave1.db
