@@ -11,10 +11,10 @@ TARGET = master_server
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-    $(CC) $(OBJS) -o $(TARGET) $(LDFLAGS)
+	$(CC) $(OBJS) -o $(TARGET) $(LDFLAGS)
 
 clean:
-    rm -f $(OBJS) $(TARGET)
+	rm -f $(OBJS) $(TARGET)
 
 .PHONY: all clean
 
