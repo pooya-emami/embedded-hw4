@@ -1,15 +1,26 @@
-CC = gcc
-CFLAGS = -Wall -O2 -I.
-LDFLAGS = -lcurl -lsqlite3 -lmemcached
+CXX = g++
+CC  = gcc
 
-SRCS = main.c mongoose.c
-OBJS = $(SRCS:.c=.o)
+CFLAGS = -Wall -O2 -I.
+LDFLAGS = -lsqlite3 -lcurl -lpthread
+
+SRCS_CPP = main.cpp
+SRCS_C   = mongoose.c
+
+OBJS = $(SRCS_CPP:.cpp=.o) $(SRCS_C:.c=.o)
+
 TARGET = master_server
 
 all: $(TARGET)
 
+%.o: %.cpp
+	$(CXX) $(CFLAGS) -c $< -o $@
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
 $(TARGET): $(OBJS)
-	$(CC) $(OBJS) -o $(TARGET) $(LDFLAGS)
+	$(CXX) $(OBJS) -o $(TARGET) $(LDFLAGS)
 
 clean:
 	rm -f $(OBJS) $(TARGET)

@@ -1,28 +1,18 @@
-CXX = g++
-CC  = gcc
-
+CC = g++
 CFLAGS = -Wall -O2 -I.
-LDFLAGS = -lsqlite3 -lcurl -lpthread
+LDFLAGS = -lsqlite3 -lcurl -lmongoose
 
-SRCS_CPP = main.cpp
-SRCS_C   = mongoose.c
-
-OBJS = $(SRCS_CPP:.cpp=.o) $(SRCS_C:.c=.o)
+SRCS = main.cpp
+OBJS = $(SRCS:.cpp=.o)
 
 TARGET = master_server
 
 all: $(TARGET)
 
-%.o: %.cpp
-	$(CXX) $(CFLAGS) -c $< -o $@
-
-%.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
-
 $(TARGET): $(OBJS)
-	$(CXX) $(OBJS) -o $(TARGET) $(LDFLAGS)
+    $(CC) $(OBJS) -o $(TARGET) $(LDFLAGS)
 
 clean:
-	rm -f $(OBJS) $(TARGET)
+    rm -f $(OBJS) $(TARGET)
 
 .PHONY: all clean
