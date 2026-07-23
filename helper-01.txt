@@ -1,0 +1,120 @@
+/01
+# Install SQLite and build tools
+sudo apt update
+sudo apt install -y sqlite3 libsqlite3-dev build-essential
+
+# Install Mongoose library (we'll use single-file version)
+cd /tmp
+wget https://raw.githubusercontent.com/cesanta/mongoose/master/mongoose.c
+wget https://raw.githubusercontent.com/cesanta/mongoose/master/mongoose.h
+sudo cp mongoose.c mongoose.h /usr/local/include/
+
+mkdir -p HW4/01/{master,slave,scripts}
+cd ~/HW4/01
+
+shared folder
+
+ls /mnt/hgfs/shared
+cp -ru /mnt/hgfs/shared/HW4/01/* /home/pooya/HW4/01/
+
+cp -ru /mnt/hgfs/shared/HW4/01/{master,scripts,data} /home/pooya/HW4/01/
+cp -ru /mnt/hgfs/shared/HW4/01/{slave,scripts,data} /home/pooya/HW4/01/
+
+cp -ru /mnt/hgfs/shared/HW4/01/{slave,scripts,data} /home/pooya/HW4/01/
+
+cp -ru /home/pooya/HW4/01/{master,scripts,data} /mnt/hgfs/shared/HW4/01/
+
+rsync -av --update /mnt/hgfs/shared/HW4/01/ /home/pooya/HW4/01/
+
+rsync -av --update /mnt/hgfs/shared/HW4/01/{master,scripts} /home/pooya/HW4/01/
+rsync -av --update /mnt/hgfs/shared/HW4/01/{slave,scripts} /home/pooya/HW4/01/
+
+rm -rf <folder>
+
+
+===================================
+make -C /path/to/dir
+e.g.
+make -C master 
+make -C slave
+
+==================================
+steps:
+./master_init_db.sh
+./slave1_init_db.sh
+./slave2_init_db.sh
+
+make clean
+make
+
+./master_server config.example
+
+./build_and_run.sh master
+./build_and_run.sh slave
+
+./test_requests.sh
+
+# Test all sensors in one go
+for sensor in "temperature:101" "co2:204" "smoke:304"; do
+    type=$(echo $sensor | cut -d: -f1)
+    id=$(echo $sensor | cut -d: -f2)
+    echo "=== Testing $type $id ==="
+    curl -s "http://192.168.233.139:8080/query?sensor_type=$type&sensor_id=$id"
+    echo -e "\n"
+done
+
+
+
+====== git ======
+cd /d "E:\PhD\2nd sem\Emb\HW4\project"
+
+tree /F
+
+git init
+
+git credential-manager configure
+git config --global credential.helper
+
+after creating a repo in github we then send this command in cmd:
+git remote add origin https://github.com/pooya-emami/embedded-hw4
+
+git remote set-url origin https://github.com/pooya-emami/embedded-hw4
+git remote -v
+
+git status
+
+git add .
+
+git commit -m "Initial commit"
+
+git branch -M main
+git push -u origin main
+
+
+git status
+git add .
+git commit -m "Describe what you changed"
+git push
+
+
+for all vms 
+sudo apt update
+sudo apt install git
+
+git config --global user.name "Pooya Emami"
+git config --global user.email "pooyaemamivar77@gmail.com"
+
+(repo must be public)
+
+git clone https://github.com/pooya-emami/embedded-hw4 HW4
+
+
+
+
+
+
+
+
+
+
+
