@@ -1,0 +1,28 @@
+# Object files
+*.o
+
+# Executables
+*.out
+*.exe
+
+# SQLite databases
+*.db
+*.db-journal
+
+# Backup files
+*.bak
+
+# Log files
+*.log
+
+# Temporary files
+*.tmp
+
+# Vim swap files
+*.swp
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db  
