@@ -1,3 +1,7 @@
+# Compiled executables
+master/master_server
+slave/slave_server
+
 # Object files
 *.o
 
