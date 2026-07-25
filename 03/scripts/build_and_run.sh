@@ -15,6 +15,10 @@ else
     ./memcached_init_slave.sh
 fi
 
+if [ "$ROLE" = "master" ]; then
+    ./mqtt_init_master.sh
+fi
+
 make clean
 make
 

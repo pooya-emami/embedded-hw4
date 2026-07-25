@@ -4,19 +4,12 @@ source ./config.example
 
 echo "[Master] Checking Mosquitto broker..."
 
+# No sudo needed anymore because mosquitto auto-starts
 if ! command -v mosquitto &> /dev/null; then
-    echo "[Master] Mosquitto not found. Installing..."
-    sudo apt update
-    sudo apt install -y mosquitto mosquitto-clients
-else
-    echo "[Master] Mosquitto already installed."
-fi
-
-if ! systemctl is-active --quiet mosquitto; then
-    echo "[Master] Starting Mosquitto service..."
-    sudo systemctl start mosquitto
-else
-    echo "[Master] Mosquitto already running."
+    echo "[Master] ERROR: Mosquitto is not installed."
+    echo "Please install it once using:"
+    echo "    sudo apt install -y mosquitto mosquitto-clients"
+    exit 1
 fi
 
 echo "[Master] Waiting for broker to be ready..."

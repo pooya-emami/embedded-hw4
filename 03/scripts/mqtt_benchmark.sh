@@ -1,0 +1,65 @@
+#!/bin/bash
+# mqtt_benchmark.sh
+
+CONFIG=${1:-config.example}
+source "$CONFIG"
+
+REQUEST_TOPIC="$MQTT_REQUEST_TOPIC"
+RESPONSE_TOPIC="$MQTT_RESPONSE_TOPIC"
+
+SENSORS=(
+    "temperature:101"
+    "temperature:104"
+    "humidity:102"
+    "motion:103"
+    "co2:204"
+)
+
+echo "=== MQTT Benchmark ==="
+echo "Broker: $MQTT_BROKER_IP:$MQTT_BROKER_PORT"
+echo "Request topic: $REQUEST_TOPIC"
+echo "Response topic: $RESPONSE_TOPIC"
+echo
+
+# --- Helper: send request ---
+send_request() {
+    local type=$1
+    local id=$2
+    local reqid=$(uuidgen)
+
+    local payload="{\"sensor_type\":\"$type\",\"sensor_id\":\"$id\",\"request_id\":\"$reqid\"}"
+
+    mosquitto_pub -h "$MQTT_BROKER_IP" -p "$MQTT_BROKER_PORT" \
+        -t "$REQUEST_TOPIC" -m "$payload" -q 1
+
+    mosquitto_sub -h "$MQTT_BROKER_IP" -p "$MQTT_BROKER_PORT" \
+        -t "$RESPONSE_TOPIC" -C 1 -q 1
+}
+
+echo "=== ROUND 1: Cold cache ==="
+for s in "${SENSORS[@]}"; do
+    type=${s%%:*}
+    id=${s##*:}
+
+    start=$(date +%s%3N)
+    resp=$(send_request "$type" "$id")
+    end=$(date +%s%3N)
+
+    echo "Sensor $type:$id → $((end-start)) ms"
+    echo "$resp"
+    echo
+done
+
+echo "=== ROUND 2: Warm cache ==="
+for s in "${SENSORS[@]}"; do
+    type=${s%%:*}
+    id=${s##*:}
+
+    start=$(date +%s%3N)
+    resp=$(send_request "$type" "$id")
+    end=$(date +%s%3N)
+
+    echo "Sensor $type:$id → $((end-start)) ms"
+    echo "$resp"
+    echo
+done
