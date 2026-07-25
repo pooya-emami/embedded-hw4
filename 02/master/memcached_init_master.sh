@@ -29,8 +29,4 @@ for i in {1..20}; do
     sleep 0.5
 done
 
-echo "[Master] Testing memcached..."
-printf "set testkey 0 60 4\r\ntest\r\nget testkey\r\nquit\r\n" \
-    | nc -w1 "$MEMCACHED_IP" "$MEMCACHED_PORT"
-
 echo "[Master] Memcached initialized."
