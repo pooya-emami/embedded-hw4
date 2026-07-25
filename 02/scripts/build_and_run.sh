@@ -9,13 +9,6 @@ fi
 
 cd ../$ROLE || exit 1
 
-
-if [ "$ROLE" = "master" ]; then
-    ./db_init_master.sh
-else
-    ./db_init_slave.sh
-fi
-
 if [ "$ROLE" = "master" ]; then
     ./memcached_init_master.sh
 else
