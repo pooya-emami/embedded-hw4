@@ -1,7 +1,7 @@
 #!/bin/bash
 # mqtt_benchmark.sh
 
-CONFIG=${1:-config.example}
+CONFIG=${1:-../master/config.example}
 source "$CONFIG"
 
 REQUEST_TOPIC="$MQTT_REQUEST_TOPIC"
@@ -21,7 +21,6 @@ echo "Request topic: $REQUEST_TOPIC"
 echo "Response topic: $RESPONSE_TOPIC"
 echo
 
-# --- Helper: send request ---
 send_request() {
     local type=$1
     local id=$2
