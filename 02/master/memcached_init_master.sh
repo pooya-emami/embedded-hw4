@@ -13,8 +13,8 @@ else
     echo "[Master] Memcached already installed."
 fi
 
-sudo systemctl stop memcached 2>/dev/null
-pkill -x memcached 2>/dev/null
+sudo systemctl stop memcached &>/dev/null
+pkill -x memcached &>/dev/null
 sleep 1
 
 echo "[Master] Starting memcached manually..."
@@ -22,7 +22,7 @@ memcached -l "$MEMCACHED_IP" -p "$MEMCACHED_PORT" -d
 
 echo "[Master] Waiting for memcached to be ready..."
 for i in {1..20}; do
-    if echo -n "" | nc -w1 "$MEMCACHED_IP" "$MEMCACHED_PORT" 2>/dev/null; then
+    if echo -n "" | nc -w1 "$MEMCACHED_IP" "$MEMCACHED_PORT" &>/dev/null; then
         echo "[Master] Memcached is up."
         break
     fi
