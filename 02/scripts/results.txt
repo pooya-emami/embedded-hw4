@@ -1,0 +1,67 @@
+Flushing cache before benchmark...
+
+========== ROUND 1: COLD CACHE ==========
+--- Master sensors ---
+  temperature id=101      56 ms
+  temperature id=101      17 ms
+  humidity id=102      17 ms
+  humidity id=102      15 ms
+  motion   id=103      18 ms
+  motion   id=103      17 ms
+  temperature id=104      17 ms
+  temperature id=104      32 ms
+--- Slave1 sensors ---
+  temperature id=201      41 ms
+  temperature id=201      19 ms
+  humidity id=202      25 ms
+  humidity id=202      17 ms
+  motion   id=203      24 ms
+  motion   id=203      24 ms
+  co2      id=204      30 ms
+  co2      id=204      20 ms
+--- Slave2 sensors ---
+  temperature id=301      68 ms
+  temperature id=301      21 ms
+  humidity id=302      30 ms
+  humidity id=302      17 ms
+  motion   id=303      41 ms
+  motion   id=303      18 ms
+  smoke    id=304      39 ms
+  smoke    id=304      19 ms
+
+========== ROUND 2: WARM CACHE ==========
+--- Master sensors ---
+  temperature id=101      19 ms
+  temperature id=101      18 ms
+  humidity id=102      20 ms
+  humidity id=102      16 ms
+  motion   id=103      18 ms
+  motion   id=103      17 ms
+  temperature id=104      15 ms
+  temperature id=104      37 ms
+--- Slave1 sensors ---
+  temperature id=201      15 ms
+  temperature id=201      45 ms
+  humidity id=202      14 ms
+  humidity id=202      17 ms
+  motion   id=203      18 ms
+  motion   id=203      15 ms
+  co2      id=204      16 ms
+  co2      id=204      16 ms
+--- Slave2 sensors ---
+  temperature id=301      16 ms
+  temperature id=301      16 ms
+  humidity id=302      17 ms
+  humidity id=302      18 ms
+  motion   id=303      15 ms
+  motion   id=303      19 ms
+  smoke    id=304      16 ms
+  smoke    id=304      50 ms
+
+========== SUMMARY ==========
+Sensors tested per round: 24
+Round 1 (cold) average:   26 ms
+Round 2 (warm) average:   20 ms
+Improvement:              6 ms
+Improvement:              23.1%
+==============================

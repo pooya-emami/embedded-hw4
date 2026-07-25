@@ -1,0 +1,11 @@
+[Master] Initializing Memcached...
+IP: 127.0.0.1
+PORT: 11211
+[Master] Memcached already installed.
+[Master] Starting memcached manually...
+[Master] Waiting for memcached to be ready...
+[Master] Memcached is up.
+[Master] Memcached initialized.
+rm -f main.o master_server
+g++    -c -o main.o main.cpp
+g++ main.o -o master_server -lsqlite3 -lcurl -lmemcached -lmongoose
