@@ -174,6 +174,5 @@ int main(int argc, char **argv) {
         mg_mgr_poll(&mgr, 1000);
     }
 
-    mg_mgr_free(&mgr);
     return 0;
 }
