@@ -20,10 +20,13 @@ echo "Request topic: $REQUEST_TOPIC"
 echo "Response topic: $RESPONSE_TOPIC"
 echo
 
+REQ_COUNTER=0
+
 send_request() {
     local type=$1
     local id=$2
-    local reqid=$(uuidgen)
+    REQ_COUNTER=$((REQ_COUNTER + 1))
+    local reqid="req${REQ_COUNTER}_$(date +%s%N)"
     local payload="{\"sensor_type\":\"$type\",\"sensor_id\":\"$id\",\"request_id\":\"$reqid\"}"
 
     local tmpfile=$(mktemp)
@@ -49,7 +52,6 @@ send_request() {
 }
 
 run_round() {
-    local label=$1
     for s in "${SENSORS[@]}"; do
         local type=${s%%:*}
         local id=${s##*:}
@@ -66,7 +68,7 @@ run_round() {
 }
 
 echo "=== ROUND 1: Cold cache ==="
-run_round "cold"
+run_round
 
 echo "=== ROUND 2: Warm cache ==="
-run_round "warm"
+run_round
