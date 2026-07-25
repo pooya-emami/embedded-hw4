@@ -13,7 +13,6 @@ else
     echo "[Slave] Memcached already installed."
 fi
 
-sudo systemctl stop memcached &>/dev/null
 pkill -x memcached &>/dev/null
 sleep 1
 
