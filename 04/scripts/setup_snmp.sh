@@ -41,7 +41,7 @@ $DBGEN && ./$DB_INIT
 
 cat > snmpd.conf <<EOF
 rocommunity public
-pass .1.3.6.1.4.1.99999.1 /bin/bash ./sensor_pass.sh ./$DB_FILE
+pass .1.3.6.1.4.1.99999.1 /bin/bash ./sensor_pass.sh $DB_FILE
 EOF
 
 chmod +x sensor_pass.sh

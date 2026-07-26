@@ -1,29 +1,23 @@
 #!/bin/bash
 # sensor_pass.sh
-# SNMP pass script: maps OIDs to SQLite sensor data
 
-DB_FILE="$1"
-OID="$2"
+DB_FILE="$1"     
+OID="$2"  
 
-# Base OID for our custom tree
-BASE_OID=".1.3.6.1.4.1.99999.1"
+BASE=".1.3.6.1.4.1.99999.1"
 
-# Remove base prefix
-SUFFIX="${OID#$BASE_OID}"
+SUFFIX="${OID#$BASE}"
 
-# Expected format: .<sensor_id>.<field>
-# Example: .101.1 → sensor_id=101, field=1
-IFS='.' read -ra PARTS <<< "$SUFFIX"
+IFS='.' read -ra P <<< "$SUFFIX"
 
-SENSOR_ID="${PARTS[1]}"
-FIELD="${PARTS[2]}"
+SENSOR_ID="${P[1]}"
+FIELD="${P[2]}"
 
-if [ -z "$SENSOR_ID" ] || [ -z "$FIELD" ]; then
+if [[ -z "$SENSOR_ID" || -z "$FIELD" ]]; then
     exit 1
 fi
 
-# Query SQLite
-RESULT=$(sqlite3 "$DB_FILE" <<EOF
+ROW=$(sqlite3 "$DB_FILE" <<EOF
 SELECT s.sensor_name, s.sensor_type, r.value, s.unit, r.recorded_at
 FROM sensors s JOIN sensor_readings r
 ON s.sensor_id = r.sensor_id
@@ -32,18 +26,9 @@ ORDER BY datetime(r.recorded_at) DESC LIMIT 1;
 EOF
 )
 
-if [ -z "$RESULT" ]; then
-    exit 1
-fi
+[ -z "$ROW" ] && exit 1
 
-IFS='|' read -r NAME TYPE VALUE UNIT TIME <<< "$RESULT"
-
-# Field mapping:
-# 1 → name
-# 2 → type
-# 3 → value
-# 4 → unit
-# 5 → recorded_at
+IFS='|' read -r NAME TYPE VALUE UNIT TIME <<< "$ROW"
 
 case "$FIELD" in
     1) OUT="$NAME" ;;
@@ -53,11 +38,6 @@ case "$FIELD" in
     5) OUT="$TIME" ;;
     *) exit 1 ;;
 esac
-
-# SNMP output format:
-# <OID>
-# <TYPE>
-# <VALUE>
 
 echo "$OID"
 echo "string"
