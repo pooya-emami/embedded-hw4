@@ -35,7 +35,6 @@ void load_config(const std::string &file_name) {
 
     std::string line;
     while (std::getline(f, line)) {
-        line = trim(line);
         if (line.empty() || line[0] == '#') continue;
 
         std::string key, value;
