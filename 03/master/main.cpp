@@ -3,6 +3,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <chrono>
 #include <sqlite3.h>
 #include <curl/curl.h>
 #include <libmemcached/memcached.h>
