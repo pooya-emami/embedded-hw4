@@ -128,17 +128,18 @@ void handler(struct mg_connection *c, int ev, void *data) {
     std::string cache_key = sensor_type + "_" + sensor_id;
 
     auto t_start = std::chrono::steady_clock::now();
-    std::string source = "cache";
+
+    // unified source field
+    std::string source = "slave-cache";
 
     // Try cache first
     std::string reply = cache_get(cache_key);
 
     // If not cached, read SQLite
     if (reply.empty()) {
-        source = "database";
+        source = "slave-database";
         reply = get_sensor_data_sqlite(cfg.db, sensor_type, sensor_id);
 
-        // If found, store in cache
         if (!reply.empty()) {
             cache_set(cache_key, reply);
         }
@@ -179,7 +180,5 @@ int main(int argc, char **argv) {
     while (true)
         mg_mgr_poll(&mgr, 1000);
 
-    mg_mgr_free(&mgr);
-    memcached_free(memc);
     return 0;
 }
