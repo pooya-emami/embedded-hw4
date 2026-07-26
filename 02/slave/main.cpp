@@ -131,15 +131,14 @@ void handler(struct mg_connection *c, int ev, void *data) {
 
     std::string source = "slave_cache";
 
-    // Try cache first
+    // Try slave cache
     std::string reply = cache_get(cache_key);
 
-    // If not cached, read SQLite
+    // Try slave database
     if (reply.empty()) {
-        source = "slave_database";
         reply = get_sensor_data_sqlite(cfg.db, sensor_type, sensor_id);
-
         if (!reply.empty()) {
+            source = "slave_database";
             cache_set(cache_key, reply);
         }
     }
@@ -149,15 +148,13 @@ void handler(struct mg_connection *c, int ev, void *data) {
 
     if (!reply.empty()) {
         std::string final_reply = annotate_json(reply, elapsed_ms, source);
-        mg_http_reply(c, 200,
-                      "Content-Type: application/json\r\n",
-                      "%s", final_reply.c_str());
+        mg_http_reply(c, 200, "Content-Type: application/json\r\n", "%s", final_reply.c_str());
     } else {
-        mg_http_reply(c, 404,
-                      "Content-Type: application/json\r\n",
+        mg_http_reply(c, 404, "Content-Type: application/json\r\n",
                       "{\"error\":\"Sensor data not found\"}");
     }
 }
+
 
 int main(int argc, char **argv) {
     load_config(argc > 1 ? argv[1] : "config.example");

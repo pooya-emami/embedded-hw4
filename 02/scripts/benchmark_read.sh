@@ -28,13 +28,6 @@ source "$MASTER_CONFIG"
 
 MASTER_IP="${MASTER_IP:-127.0.0.1}"
 
-echo "Flushing all node caches before benchmark..."
-for HOST in "127.0.0.1" "$SLAVE1_IP" "$SLAVE2_IP"; do
-    echo "  flushing $HOST:$MEMCACHED_PORT"
-    echo "flush_all" | nc -w1 "$HOST" "$MEMCACHED_PORT" &>/dev/null || true
-done
-echo
-
 measure_request() {
     local TYPE=$1
     local ID=$2
@@ -46,7 +39,8 @@ measure_request() {
     CURL_MS=$(( (END - START) / 1000000 ))
 
     SERVER_MS=$(echo "$BODY" | grep -oP '"response_time_ms":\s*\K[0-9.]+' || true)
-    SOURCE=$(echo "$BODY" | grep -oP '"source":"\K[a-zA-Z_]+' || true)
+
+    SOURCE=$(echo "$BODY" | grep -oP '"source":"\K[a-zA-Z0-9_-]+' | tail -n1)
 
     [ -z "$SERVER_MS" ] && SERVER_MS="-"
     [ -z "$SOURCE" ] && SOURCE="error"

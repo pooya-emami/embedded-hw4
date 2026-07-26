@@ -177,59 +177,59 @@ void handler(struct mg_connection *c, int ev, void *data) {
 
     std::string source = "master_cache";
 
-    // Try cache first
+    // Try master cache
     std::string answer = cache_get(cache_key);
 
+    // Try master database
     if (answer.empty()) {
-        // Try local DB
-        source = "master_database";
         answer = search_database(cfg.db, sensor_type, sensor_id);
+        if (!answer.empty()) {
+            source = "master_database";
+        }
+    }
 
-        // Try slaves
+    // Try slaves
+    if (answer.empty()) {
+        std::string slave_answer;
+
+        slave_answer = ask_slave(cfg.slave1_ip, cfg.slave1_port, sensor_type, sensor_id);
+        if (!slave_answer.empty() && slave_answer.find("\"error\"") == std::string::npos) {
+            if (slave_answer.find("\"source\":\"slave_cache\"") != std::string::npos)
+                source = "slave_cache";
+            else
+                source = "slave_database";
+            answer = slave_answer;
+        }
+
         if (answer.empty()) {
-            std::string slave_answer;
-
-            slave_answer = ask_slave(cfg.slave1_ip, cfg.slave1_port, sensor_type, sensor_id);
+            slave_answer = ask_slave(cfg.slave2_ip, cfg.slave2_port, sensor_type, sensor_id);
             if (!slave_answer.empty() && slave_answer.find("\"error\"") == std::string::npos) {
-                if (slave_answer.find("\"source\":\"cache\"") != std::string::npos)
+                if (slave_answer.find("\"source\":\"slave_cache\"") != std::string::npos)
                     source = "slave_cache";
                 else
                     source = "slave_database";
                 answer = slave_answer;
             }
-
-            if (answer.empty()) {
-                slave_answer = ask_slave(cfg.slave2_ip, cfg.slave2_port, sensor_type, sensor_id);
-                if (!slave_answer.empty() && slave_answer.find("\"error\"") == std::string::npos) {
-                    if (slave_answer.find("\"source\":\"cache\"") != std::string::npos)
-                        source = "slave_cache";
-                    else
-                        source = "slave_database";
-                    answer = slave_answer;
-                }
-            }
         }
+    }
 
-        // Cache the result
-        if (!answer.empty() && answer.find("\"error\"") == std::string::npos) {
-            cache_set(cache_key, answer);
-        }
+    // Cache final answer in master cache
+    if (!answer.empty() && answer.find("\"error\"") == std::string::npos) {
+        cache_set(cache_key, answer);
     }
 
     auto t_end = std::chrono::steady_clock::now();
     double elapsed_ms = std::chrono::duration<double, std::milli>(t_end - t_start).count();
 
-    if (!answer.empty() && answer.find("\"error\"") == std::string::npos) {
+    if (!answer.empty()) {
         std::string final_answer = annotate_json(answer, elapsed_ms, source);
-        mg_http_reply(c, 200,
-                      "Content-Type: application/json\r\n",
-                      "%s", final_answer.c_str());
+        mg_http_reply(c, 200, "Content-Type: application/json\r\n", "%s", final_answer.c_str());
     } else {
-        mg_http_reply(c, 404,
-                      "Content-Type: application/json\r\n",
+        mg_http_reply(c, 404, "Content-Type: application/json\r\n",
                       "{\"error\":\"Sensor data not found\"}");
     }
 }
+
 
 int main(int argc, char **argv) {
     load_config(argc > 1 ? argv[1] : "config.example");
