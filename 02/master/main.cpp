@@ -26,6 +26,13 @@ struct Config {
 Config cfg;
 memcached_st *memc = nullptr;
 
+static std::string trim(const std::string &s) {
+    size_t start = s.find_first_not_of(" \t\r\n");
+    size_t end = s.find_last_not_of(" \t\r\n");
+    if (start == std::string::npos) return "";
+    return s.substr(start, end - start + 1);
+}
+
 void load_config(const std::string &file_name) {
     std::ifstream f(file_name);
     if (!f.is_open()) {
@@ -35,19 +42,27 @@ void load_config(const std::string &file_name) {
 
     std::string line;
     while (std::getline(f, line)) {
+        line = trim(line);
         if (line.empty() || line[0] == '#') continue;
 
         std::string key, value;
         std::stringstream ss(line);
         if (std::getline(ss, key, '=') && std::getline(ss, value)) {
-            if (key == "MASTER_PORT") cfg.port = std::stoi(value);
-            else if (key == "MASTER_DB") cfg.db = value;
-            else if (key == "SLAVE1_IP") cfg.slave1_ip = value;
-            else if (key == "SLAVE1_PORT") cfg.slave1_port = std::stoi(value);
-            else if (key == "SLAVE2_IP") cfg.slave2_ip = value;
-            else if (key == "SLAVE2_PORT") cfg.slave2_port = std::stoi(value);
-            else if (key == "MEMCACHED_IP") cfg.memcached_ip = value;
-            else if (key == "MEMCACHED_PORT") cfg.memcached_port = std::stoi(value);
+            key = trim(key);
+            value = trim(value);
+            if (value.empty()) continue;
+
+            try {
+                if (key == "MASTER_PORT") cfg.port = std::stoi(value);
+                else if (key == "MASTER_DB") cfg.db = value;
+                else if (key == "SLAVE1_IP") cfg.slave1_ip = value;
+                else if (key == "SLAVE1_PORT") cfg.slave1_port = std::stoi(value);
+                else if (key == "SLAVE2_IP") cfg.slave2_ip = value;
+                else if (key == "SLAVE2_PORT") cfg.slave2_port = std::stoi(value);
+            } catch (const std::exception &e) {
+                std::cerr << "Warning: bad config value for " << key
+                          << " = \"" << value << "\" (" << e.what() << ")\n";
+            }
         }
     }
 }
