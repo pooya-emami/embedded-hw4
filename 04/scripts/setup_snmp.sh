@@ -1,39 +1,44 @@
 #!/bin/bash
 set -euo pipefail
 
-DB_FILE=""
-CSV_FILE=""
+NODE=""
 DBGEN=false
 
-# Parse args
 for a in "$@"; do
     [[ "$a" == "--dbgen" ]] && DBGEN=true && continue
-    [[ -z "$DB_FILE" ]] && DB_FILE="$a" && continue
-    [[ -z "$CSV_FILE" ]] && CSV_FILE="$a" && continue
+    [[ -z "$NODE" ]] && NODE="$a" && continue
 done
 
-[ -z "$DB_FILE" ] && echo "Usage: ./setup_snmp.sh <db_file> <csv_file> [--dbgen]" && exit 1
-[ -z "$CSV_FILE" ] && echo "Usage: ./setup_snmp.sh <db_file> <csv_file> [--dbgen]" && exit 1
+[ -z "$NODE" ] && echo "Usage: ./setup_snmp.sh master|slave1|slave2 [--dbgen]" && exit 1
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SNMP_DIR="$SCRIPT_DIR/../snmp"
 
+case "$NODE" in
+    master)
+        DB_FILE="master.db"
+        DB_INIT="db_init_master.sh"
+        ;;
+    slave1)
+        DB_FILE="slave1.db"
+        DB_INIT="db_init_slave1.sh"
+        ;;
+    slave2)
+        DB_FILE="slave2.db"
+        DB_INIT="db_init_slave2.sh"
+        ;;
+    *)
+        echo "Invalid node: $NODE"
+        exit 1
+        ;;
+esac
+
 cd "$SNMP_DIR"
 
-if $DBGEN; then
-    if [[ "$DB_FILE" == *master* ]]; then
-        ./db_init_master.sh "$DB_FILE" "$CSV_FILE"
-    elif [[ "$DB_FILE" == *slave1* ]]; then
-        ./db_init_slave1.sh "$DB_FILE" "$CSV_FILE"
-    else
-        ./db_init_slave2.sh "$DB_FILE" "$CSV_FILE"
-    fi
-fi
+$DBGEN && ./$DB_INIT
 
-# DB existence check
 [ ! -f "$DB_FILE" ] && echo "Missing DB: $DB_FILE (run with --dbgen)" && exit 1
 
-# Generate snmpd.conf
 cat > snmpd.conf <<EOF
 rocommunity public
 pass .1.3.6.1.4.1.99999.1 /bin/bash ./sensor_pass.sh ./$DB_FILE
