@@ -55,8 +55,10 @@ measure_request() {
 }
 
 read_csv() {
-    tail -n +2 "$1" | awk -F',' '{print $1","$2}'
+    tail -n +2 "$1" \
+        | awk -F',' '!seen[$1]++ {print $1","$2}'
 }
+
 
 run_round() {
     local ROUND_LABEL=$1
