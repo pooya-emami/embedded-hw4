@@ -1,83 +1,86 @@
 #!/bin/bash
 # mqtt_benchmark.sh
-CONFIG=${1:-../master/config.example}
-source "$CONFIG"
+# Tests MQTT read latency for all sensors in two rounds
 
-REQUEST_TOPIC="$MQTT_REQUEST_TOPIC"
-RESPONSE_TOPIC="$MQTT_RESPONSE_TOPIC"
+set -euo pipefail
 
-SENSORS=(
-    "temperature:101"
-    "temperature:104"
-    "humidity:102"
-    "motion:103"
-    "co2:204"
-)
+BROKER_IP="127.0.0.1"
+BROKER_PORT=1883
+REQ_TOPIC="sensors/request"
+RES_TOPIC="sensors/response"
 
-echo "=== MQTT Benchmark ==="
-echo "Broker: $MQTT_BROKER_IP:$MQTT_BROKER_PORT"
-echo "Request topic: $REQUEST_TOPIC"
-echo "Response topic: $RESPONSE_TOPIC"
-echo
+MASTER_CSV="../data/master_sensors.csv"
+SLAVE1_CSV="../data/slave1_sensors.csv"
+SLAVE2_CSV="../data/slave2_sensors.csv"
 
-REQ_COUNTER=0
+read_csv() {
+    tail -n +2 "$1" | awk -F',' '!seen[$1]++ {print $1","$2}'
+}
 
-send_request() {
-    local type=$1
-    local id=$2
-    REQ_COUNTER=$((REQ_COUNTER + 1))
-    local reqid="req${REQ_COUNTER}_$(date +%s%N)"
-    local payload="{\"sensor_type\":\"$type\",\"sensor_id\":\"$id\",\"request_id\":\"$reqid\"}"
+measure_mqtt() {
+    local TYPE=$1
+    local ID=$2
+    local REQ_ID="req_$RANDOM"
 
-    local tmpfile=$(mktemp)
+    local START=$(date +%s%N)
 
-    # --- Setup phase: get subscriber ready before publishing ---
-    local setup_start setup_end
-    setup_start=$(date +%s%3N)
+    mosquitto_pub -h "$BROKER_IP" -p "$BROKER_PORT" \
+        -t "$REQ_TOPIC" \
+        -m "{\"sensor_type\":\"$TYPE\",\"sensor_id\":\"$ID\",\"request_id\":\"$REQ_ID\"}"
 
-    mosquitto_sub -h "$MQTT_BROKER_IP" -p "$MQTT_BROKER_PORT" \
-        -t "$RESPONSE_TOPIC" -C 1 -q 1 > "$tmpfile" &
-    local sub_pid=$!
-    sleep 0.3   # give mosquitto_sub time to connect+subscribe
+    local RESPONSE=$(mosquitto_sub -h "$BROKER_IP" -p "$BROKER_PORT" \
+        -t "$RES_TOPIC" -C 1 -W 5)
 
-    setup_end=$(date +%s%3N)
-    local setup_ms=$((setup_end - setup_start))
+    local END=$(date +%s%N)
+    local LATENCY_MS=$(( (END - START) / 1000000 ))
 
-    # --- Round-trip phase: publish -> master resolves -> response arrives ---
-    local rt_start rt_end
-    rt_start=$(date +%s%3N)
+    local SOURCE=$(echo "$RESPONSE" | grep -oP '"source":"\K[a-zA-Z0-9_-]+' | tail -n1)
+    local SERVER_MS=$(echo "$RESPONSE" | grep -oP '"response_time_ms":\s*\K[0-9.]+' || echo "-")
 
-    mosquitto_pub -h "$MQTT_BROKER_IP" -p "$MQTT_BROKER_PORT" \
-        -t "$REQUEST_TOPIC" -m "$payload" -q 1
-
-    wait "$sub_pid"
-    rt_end=$(date +%s%3N)
-    local rt_ms=$((rt_end - rt_start))
-
-    local resp
-    resp=$(cat "$tmpfile")
-    rm -f "$tmpfile"
-
-    if [[ "$resp" != *"\"request_id\":\"$reqid\""* ]]; then
-        echo "  WARNING: request_id mismatch or missing in response!" >&2
-    fi
-
-    echo "  setup: ${setup_ms}ms | round-trip (pub->response): ${rt_ms}ms"
-    echo "$resp"
+    echo "${LATENCY_MS}|${SERVER_MS}|${SOURCE}"
 }
 
 run_round() {
-    for s in "${SENSORS[@]}"; do
-        local type=${s%%:*}
-        local id=${s##*:}
-        echo "Sensor $type:$id"
-        send_request "$type" "$id"
-        echo
+    local LABEL=$1
+    echo "========== $LABEL =========="
+
+    local TOTAL_CLIENT=0
+    local TOTAL_SERVER=0
+    local COUNT=0
+    local SERVER_COUNT=0
+
+    for FILE in "$MASTER_CSV" "$SLAVE1_CSV" "$SLAVE2_CSV"; do
+        while IFS=',' read -r ID TYPE; do
+            [ -z "$ID" ] && continue
+
+            RESULT=$(measure_mqtt "$TYPE" "$ID")
+            CLIENT_MS="${RESULT%%|*}"
+            REST="${RESULT#*|}"
+            SERVER_MS="${REST%%|*}"
+            SOURCE="${REST#*|}"
+
+            TOTAL_CLIENT=$((TOTAL_CLIENT + CLIENT_MS))
+            COUNT=$((COUNT + 1))
+
+            if [ "$SERVER_MS" != "-" ]; then
+                TOTAL_SERVER=$(awk "BEGIN {print $TOTAL_SERVER + $SERVER_MS}")
+                SERVER_COUNT=$((SERVER_COUNT + 1))
+            fi
+
+            printf "  %-8s id=%-6s client=%4d ms  server=%6s ms  source=%s\n" \
+                "$TYPE" "$ID" "$CLIENT_MS" "$SERVER_MS" "$SOURCE"
+
+        done < <(read_csv "$FILE")
     done
+
+    echo
+
+    echo "Client avg: $((TOTAL_CLIENT / COUNT)) ms"
+    if [ "$SERVER_COUNT" -gt 0 ]; then
+        SERVER_AVG=$(awk "BEGIN {printf \"%.2f\", $TOTAL_SERVER / $SERVER_COUNT}")
+        echo "Server avg: $SERVER_AVG ms"
+    fi
 }
 
-echo "=== ROUND 1: Cold cache ==="
-run_round
-
-echo "=== ROUND 2: Warm cache ==="
-run_round
+run_round "ROUND 1: COLD CACHE"
+run_round "ROUND 2: WARM CACHE"

@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <chrono>
 #include <sqlite3.h>
 #include <libmemcached/memcached.h>
 
@@ -31,8 +32,8 @@ void load_config(const std::string &filename) {
 
         std::string key, value;
         std::stringstream ss(line);
-
         if (std::getline(ss, key, '=') && std::getline(ss, value)) {
+            if (value.empty()) continue;
             if (key == "SLAVE_PORT") cfg.port = std::stoi(value);
             else if (key == "SLAVE_DB") cfg.db = value;
             else if (key == "MEMCACHED_IP") cfg.memcached_ip = value;
@@ -101,6 +102,16 @@ std::string get_sensor_data_sqlite(const std::string &db_name,
     return result;
 }
 
+std::string annotate_json(std::string json, double ms, const std::string &source) {
+    if (json.empty() || json.back() != '}') return json;
+    json.pop_back();
+    std::stringstream out;
+    out << json
+        << ",\"response_time_ms\":" << ms
+        << ",\"source\":\"" << source << "\"}";
+    return out.str();
+}
+
 void handler(struct mg_connection *c, int ev, void *data) {
     if (ev != MG_EV_HTTP_MSG) return;
 
@@ -110,32 +121,37 @@ void handler(struct mg_connection *c, int ev, void *data) {
         return;
 
     char type[64], id[64];
-
     mg_http_get_var(&msg->query, "sensor_type", type, sizeof(type));
     mg_http_get_var(&msg->query, "sensor_id", id, sizeof(id));
 
     std::string sensor_type = type;
     std::string sensor_id = id;
-
     std::string cache_key = sensor_type + "_" + sensor_id;
 
-    // Try cache first
+    auto t_start = std::chrono::steady_clock::now();
+
+    std::string source = "slave_cache";
+
+    // Try slave cache
     std::string reply = cache_get(cache_key);
 
-    // If not cached, read SQLite
+    // Try slave database
     if (reply.empty()) {
         reply = get_sensor_data_sqlite(cfg.db, sensor_type, sensor_id);
-
-        // If found, store in cache
         if (!reply.empty()) {
+            source = "slave_database";
             cache_set(cache_key, reply);
         }
     }
 
+    auto t_end = std::chrono::steady_clock::now();
+    double elapsed_ms = std::chrono::duration<double, std::milli>(t_end - t_start).count();
+
     if (!reply.empty()) {
+        std::string final_reply = annotate_json(reply, elapsed_ms, source);
         mg_http_reply(c, 200,
                       "Content-Type: application/json\r\n",
-                      "%s", reply.c_str());
+                      "%s", final_reply.c_str());
     } else {
         mg_http_reply(c, 404,
                       "Content-Type: application/json\r\n",
@@ -163,7 +179,5 @@ int main(int argc, char **argv) {
     while (true)
         mg_mgr_poll(&mgr, 1000);
 
-    mg_mgr_free(&mgr);
-    memcached_free(memc);
     return 0;
 }

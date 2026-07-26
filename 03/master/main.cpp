@@ -158,27 +158,61 @@ void cache_set(const std::string &key, const std::string &value) {
 }
 
 std::string resolve_sensor(const std::string &sensor_type, const std::string &sensor_id) {
+    auto t_start = std::chrono::steady_clock::now();
+
     std::string cache_key = sensor_type + "_" + sensor_id;
+    std::string source = "master_cache";
 
     std::string answer = cache_get(cache_key);
 
     if (answer.empty()) {
         answer = search_database(cfg.db, sensor_type, sensor_id);
-
-        if (answer.empty()) {
-            answer = ask_slave(cfg.slave1_ip, cfg.slave1_port, sensor_type, sensor_id);
-
-            if (answer.empty() || answer.find("\"error\"") != std::string::npos) {
-                answer = ask_slave(cfg.slave2_ip, cfg.slave2_port, sensor_type, sensor_id);
-            }
-        }
-
         if (!answer.empty()) {
-            cache_set(cache_key, answer);
+            source = "master_database";
         }
     }
 
-    return answer;
+    if (answer.empty()) {
+        std::string slave_answer;
+
+        slave_answer = ask_slave(cfg.slave1_ip, cfg.slave1_port, sensor_type, sensor_id);
+        if (!slave_answer.empty() && slave_answer.find("\"error\"") == std::string::npos) {
+            if (slave_answer.find("\"source\":\"slave_cache\"") != std::string::npos)
+                source = "slave_cache";
+            else
+                source = "slave_database";
+            answer = slave_answer;
+        }
+
+        if (answer.empty()) {
+            slave_answer = ask_slave(cfg.slave2_ip, cfg.slave2_port, sensor_type, sensor_id);
+            if (!slave_answer.empty() && slave_answer.find("\"error\"") == std::string::npos) {
+                if (slave_answer.find("\"source\":\"slave_cache\"") != std::string::npos)
+                    source = "slave_cache";
+                else
+                    source = "slave_database";
+                answer = slave_answer;
+            }
+        }
+    }
+
+    if (!answer.empty() && answer.find("\"error\"") == std::string::npos) {
+        cache_set(cache_key, answer);
+    }
+
+    auto t_end = std::chrono::steady_clock::now();
+    double elapsed_ms = std::chrono::duration<double, std::milli>(t_end - t_start).count();
+
+    if (!answer.empty()) {
+        answer.pop_back();
+        std::stringstream out;
+        out << answer
+            << ",\"response_time_ms\":" << elapsed_ms
+            << ",\"source\":\"" << source << "\"}";
+        return out.str();
+    }
+
+    return "";
 }
 
 void handler(struct mg_connection *c, int ev, void *data) {
