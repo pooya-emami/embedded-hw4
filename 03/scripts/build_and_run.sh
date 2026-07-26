@@ -1,25 +1,48 @@
 #!/bin/bash
+
 ROLE=$1
-CONFIG=${2:-config.example}
+CONFIG="config.example"
+DBGEN=false
 
-if [ -z "$ROLE" ]; then
-    echo "Usage: $0 master|slave [config]"
-    exit 1
-fi
+# Parse args
+for a in "$@"; do
+    [[ "$a" == "--dbgen" ]] && DBGEN=true
+    [[ "$a" != "$ROLE" && "$a" != "--dbgen" ]] && CONFIG="$a"
+done
 
-cd ../$ROLE || exit 1
+[ -z "$ROLE" ] && echo "Usage: $0 master|slave1|slave2 [config] [--dbgen]" && exit 1
 
-if [ "$ROLE" = "master" ]; then
-    ./memcached_init_master.sh
-else
-    ./memcached_init_slave.sh
-fi
+case "$ROLE" in
+    master)
+        DIR="../master"
+        MEM_INIT="memcached_init_master.sh"
+        MQTT_INIT="mqtt_init_master.sh"
+        DB_INIT="db_init_master.sh"
+        DB_FILE="master.db"
+        ;;
+    slave1)
+        DIR="../slave"
+        MEM_INIT="memcached_init_slave.sh"
+        MQTT_INIT=""
+        DB_INIT="db_init_slave1.sh"
+        DB_FILE="slave1.db"
+        ;;
+    slave2)
+        DIR="../slave"
+        MEM_INIT="memcached_init_slave.sh"
+        MQTT_INIT=""
+        DB_INIT="db_init_slave2.sh"
+        DB_FILE="slave2.db"
+        ;;
+esac
 
-if [ "$ROLE" = "master" ]; then
-    ./mqtt_init_master.sh
-fi
+cd "$DIR" || exit 1
 
-make clean
-make
+./$MEM_INIT
+[[ -n "$MQTT_INIT" ]] && ./$MQTT_INIT
 
-./${ROLE}_server "$CONFIG"
+$DBGEN && ./$DB_INIT
+
+[ ! -f "$DB_FILE" ] && echo "Missing DB: $DB_FILE (run with --dbgen)" && exit 1
+
+make clean && make && ./${ROLE}_server "$CONFIG"
