@@ -41,13 +41,13 @@ $DBGEN && ./$DB_INIT
 
 cat > snmpd.conf <<EOF
 rocommunity public
-pass .1.3.6.1.4.1.99999.1 /bin/bash ./sensor_pass.sh $DB_FILE
+pass .1.3.6.1.4.1.99999.1 /bin/bash $SNMP_DIR/sensor_pass.sh $SNMP_DIR/$DB_FILE
 EOF
 
 chmod +x sensor_pass.sh
 
 echo "SNMP setup complete."
 echo "Run SNMP daemon manually with:"
-echo "  snmpd -f -Lo -C -c $SNMP_DIR/snmpd.conf udp:127.0.0.1:1161"
+echo "  sudo snmpd -f -Lo -C -c $SNMP_DIR/snmpd.conf udp:127.0.0.1:1161"
 echo "Test with:"
 echo "  snmpwalk -v2c -c public 127.0.0.1:1161 .1.3.6.1.4.1.99999.1"
