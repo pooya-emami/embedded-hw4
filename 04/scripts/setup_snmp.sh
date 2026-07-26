@@ -1,4 +1,5 @@
 #!/bin/bash
+# setup_snmp.sh
 set -euo pipefail
 
 DB_FILE=${1:?Usage: ./setup_snmp.sh <db_file> <csv_file>}
