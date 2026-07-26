@@ -21,6 +21,7 @@ struct Config {
 
     std::string memcached_ip = "127.0.0.1";
     int memcached_port = 11211;
+    int cache_ttl_seconds = 3600;
 };
 
 Config cfg;
@@ -49,6 +50,7 @@ void load_config(const std::string &file_name) {
             else if (key == "SLAVE2_PORT") cfg.slave2_port = std::stoi(value);
             else if (key == "MEMCACHED_IP") cfg.memcached_ip = value;
             else if (key == "MEMCACHED_PORT") cfg.memcached_port = std::stoi(value);
+            else if (key == "CACHE_TTL_SECONDS") cfg.cache_ttl_seconds = std::stoi(value);
         }
     }
 }
@@ -145,7 +147,7 @@ std::string cache_get(const std::string &key) {
 void cache_set(const std::string &key, const std::string &value) {
     memcached_set(memc, key.c_str(), key.size(),
                   value.c_str(), value.size(),
-                  3600, 0);
+                  cfg.cache_ttl_seconds, 0);
 }
 
 std::string annotate_json(std::string json, double ms, const std::string &source) {
