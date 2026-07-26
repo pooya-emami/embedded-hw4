@@ -1,0 +1,36 @@
+========== ROUND 1: COLD CACHE ==========
+  temperature id=101    client= 113 ms  server=21.8918 ms  source=master_database
+  humidity id=102    client=5035 ms  server=     - ms  source=
+  motion   id=103    client=5034 ms  server=     - ms  source=
+  temperature id=104    client=5035 ms  server=     - ms  source=
+  temperature id=201    client= 810 ms  server=35.1805
+784.834 ms  source=slave_database
+  humidity id=202    client=  71 ms  server=2.95727
+20.2957 ms  source=slave_database
+  motion   id=203    client=5034 ms  server=     - ms  source=
+  co2      id=204    client=5051 ms  server=     - ms  source=
+  temperature id=301    client= 788 ms  server=606.331
+769.65 ms  source=slave_database
+  humidity id=302    client=  60 ms  server=1.67034
+12.5037 ms  source=slave_database
+  motion   id=303    client=  99 ms  server=0.917561
+35.5715 ms  source=slave_database
+  smoke    id=304    client=5033 ms  server=     - ms  source=
+
+Client avg: 2680 ms
+Server avg: 111.49 ms
+========== ROUND 2: WARM CACHE ==========
+  temperature id=101    client=5026 ms  server=     - ms  source=
+  humidity id=102    client=5028 ms  server=     - ms  source=
+  motion   id=103    client=5060 ms  server=     - ms  source=
+  temperature id=104    client=5051 ms  server=     - ms  source=
+  temperature id=201    client=5052 ms  server=     - ms  source=
+  humidity id=202    client=5066 ms  server=     - ms  source=
+  motion   id=203    client=5034 ms  server=     - ms  source=
+  co2      id=204    client=5050 ms  server=     - ms  source=
+  temperature id=301    client=5038 ms  server=     - ms  source=
+  humidity id=302    client=5057 ms  server=     - ms  source=
+  motion   id=303    client=5033 ms  server=     - ms  source=
+  smoke    id=304    client=5027 ms  server=     - ms  source=
+
+Client avg: 5043 ms
