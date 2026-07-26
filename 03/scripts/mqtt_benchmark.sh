@@ -22,20 +22,20 @@ measure_mqtt() {
     local ID=$2
     local REQ_ID="req_$RANDOM"
 
-    local START=$(date +%s%N)
+    mosquitto_sub -h "$BROKER_IP" -p "$BROKER_PORT" \
+        -t "$RES_TOPIC" -C 1 -W 5 > /tmp/mqtt_resp_$$ &
+    local SUB_PID=$!
+    sleep 0.3
 
+    local START=$(date +%s%N)
     mosquitto_pub -h "$BROKER_IP" -p "$BROKER_PORT" \
         -t "$REQ_TOPIC" \
         -m "{\"sensor_type\":\"$TYPE\",\"sensor_id\":\"$ID\",\"request_id\":\"$REQ_ID\"}"
 
-    local RESPONSE=""
-    for i in {1..50}; do
-        RESPONSE=$(grep "$REQ_ID" mqtt_responses.log | tail -n1)
-        if [ -n "$RESPONSE" ]; then
-            break
-        fi
-        sleep 0.1
-    done
+    wait "$SUB_PID"
+
+    local RESPONSE=$(cat /tmp/mqtt_resp_$$ 2>/dev/null || echo "")
+    rm -f /tmp/mqtt_resp_$$
 
     local END=$(date +%s%N)
     local CLIENT_MS=$(( (END - START) / 1000000 ))
@@ -50,6 +50,7 @@ measure_mqtt() {
 
     echo "${CLIENT_MS}|${SERVER_MS}|${SOURCE}"
 }
+
 
 run_round() {
     local LABEL=$1
