@@ -28,16 +28,27 @@ measure_mqtt() {
         -t "$REQ_TOPIC" \
         -m "{\"sensor_type\":\"$TYPE\",\"sensor_id\":\"$ID\",\"request_id\":\"$REQ_ID\"}"
 
-    local RESPONSE=$(mosquitto_sub -h "$BROKER_IP" -p "$BROKER_PORT" \
-        -t "$RES_TOPIC" -C 1 -W 5)
+    local RESPONSE=""
+    for i in {1..50}; do
+        RESPONSE=$(grep "$REQ_ID" mqtt_responses.log | tail -n1)
+        if [ -n "$RESPONSE" ]; then
+            break
+        fi
+        sleep 0.1
+    done
 
     local END=$(date +%s%N)
-    local LATENCY_MS=$(( (END - START) / 1000000 ))
+    local CLIENT_MS=$(( (END - START) / 1000000 ))
 
+    if [ -z "$RESPONSE" ]; then
+        echo "${CLIENT_MS}|-|timeout"
+        return
+    fi
+
+    local SERVER_MS=$(echo "$RESPONSE" | grep -oP '"response_time_ms":\s*\K[0-9.]+' | tail -n1)
     local SOURCE=$(echo "$RESPONSE" | grep -oP '"source":"\K[a-zA-Z0-9_-]+' | tail -n1)
-    local SERVER_MS=$(echo "$RESPONSE" | grep -oP '"response_time_ms":\s*\K[0-9.]+' || echo "-")
 
-    echo "${LATENCY_MS}|${SERVER_MS}|${SOURCE}"
+    echo "${CLIENT_MS}|${SERVER_MS}|${SOURCE}"
 }
 
 run_round() {
