@@ -5,138 +5,82 @@ Flushing all node caches before benchmark...
 
 ========== ROUND 1: COLD CACHE ==========
 --- Master sensors ---
-  temperature id=101    curl=  24 ms  server=3.54813 ms  source=database
-  temperature id=101    curl=  16 ms  server=0.109645 ms  source=cache   
-  humidity id=102    curl=  22 ms  server=1.33731 ms  source=database
-  humidity id=102    curl=  16 ms  server=0.091863 ms  source=cache   
-  motion   id=103    curl=  15 ms  server=0.68612 ms  source=database
-  motion   id=103    curl=  16 ms  server=0.524844 ms  source=cache   
-  temperature id=104    curl=  18 ms  server=1.04494 ms  source=database
-  temperature id=104    curl=  17 ms  server=0.144286 ms  source=cache   
+  temperature id=101    curl=  65 ms  server=6.05988 ms  source=database
+  humidity id=102    curl=  34 ms  server=3.00181 ms  source=database
+  motion   id=103    curl=  31 ms  server=2.29006 ms  source=database
+  temperature id=104    curl=  54 ms  server=3.10253 ms  source=database
 --- Slave1 sensors ---
-  temperature id=201    curl=  49 ms  server=0.143699
-17.7485 ms  source=cache
+  temperature id=201    curl=  28 ms  server=3.18364
+11.5904 ms  source=database
 slave
-  temperature id=201    curl=  15 ms  server=0.143699
-0.325113 ms  source=cache
-cache
-  humidity id=202    curl=  24 ms  server=0.102553
-4.83757 ms  source=cache
+  humidity id=202    curl=  20 ms  server=1.61903
+6.31916 ms  source=database
 slave
-  humidity id=202    curl=  16 ms  server=0.102553
-0.737663 ms  source=cache
-cache
-  motion   id=203    curl=  48 ms  server=0.255472
-13.4508 ms  source=cache
+  motion   id=203    curl=  23 ms  server=2.40463
+7.44852 ms  source=database
 slave
-  motion   id=203    curl=  17 ms  server=0.255472
-0.501382 ms  source=cache
-cache
-  co2      id=204    curl=  33 ms  server=0.14076
-15.309 ms  source=cache
+  co2      id=204    curl=  24 ms  server=1.78201
+7.27645 ms  source=database
 slave
-  co2      id=204    curl=  20 ms  server=0.14076
-0.580359 ms  source=cache
-cache
 --- Slave2 sensors ---
-  temperature id=301    curl=  52 ms  server=0.169518
-32.4988 ms  source=cache
+  temperature id=301    curl=  74 ms  server=40.7819
+54.7489 ms  source=database
 slave
-  temperature id=301    curl=  34 ms  server=0.169518
-0.094019 ms  source=cache
-cache
-  humidity id=302    curl=  28 ms  server=1.21403
-8.9565 ms  source=database
+  humidity id=302    curl=  30 ms  server=1.52806
+11.4045 ms  source=database
 slave
-  humidity id=302    curl=  16 ms  server=1.21403
-0.11773 ms  source=database
-cache
-  motion   id=303    curl=  39 ms  server=1.04016
-19.0921 ms  source=database
+  motion   id=303    curl=  70 ms  server=1.03118
+54.4694 ms  source=database
 slave
-  motion   id=303    curl=  16 ms  server=1.04016
-0.086837 ms  source=database
-cache
-  smoke    id=304    curl=  32 ms  server=1.25327
-11.179 ms  source=database
+  smoke    id=304    curl=  32 ms  server=1.65983
+11.7694 ms  source=database
 slave
-  smoke    id=304    curl=  16 ms  server=1.25327
-0.100737 ms  source=database
-cache
 
 ========== ROUND 2: WARM CACHE ==========
 --- Master sensors ---
-  temperature id=101    curl=  19 ms  server=0.110934 ms  source=cache   
-  temperature id=101    curl=  17 ms  server=0.343463 ms  source=cache   
-  humidity id=102    curl=  16 ms  server=0.123423 ms  source=cache   
-  humidity id=102    curl=  17 ms  server=0.098355 ms  source=cache   
-  motion   id=103    curl=  14 ms  server=0.154583 ms  source=cache   
-  motion   id=103    curl=  49 ms  server=0.167385 ms  source=cache   
-  temperature id=104    curl=  30 ms  server=0.204773 ms  source=cache   
-  temperature id=104    curl=  17 ms  server=0.107726 ms  source=cache   
+  temperature id=101    curl=  16 ms  server=0.57311 ms  source=cache   
+  humidity id=102    curl=  17 ms  server=0.375545 ms  source=cache   
+  motion   id=103    curl=  18 ms  server=0.432828 ms  source=cache   
+  temperature id=104    curl=  15 ms  server=0.58473 ms  source=cache   
 --- Slave1 sensors ---
-  temperature id=201    curl=  17 ms  server=0.143699
-0.135196 ms  source=cache
+  temperature id=201    curl=  17 ms  server=3.18364
+0.456371 ms  source=database
 cache
-  temperature id=201    curl=  14 ms  server=0.143699
-0.09909 ms  source=cache
+  humidity id=202    curl=  15 ms  server=1.61903
+0.533769 ms  source=database
 cache
-  humidity id=202    curl=  14 ms  server=0.102553
-0.227869 ms  source=cache
+  motion   id=203    curl=  17 ms  server=2.40463
+1.15734 ms  source=database
 cache
-  humidity id=202    curl=  15 ms  server=0.102553
-0.07398 ms  source=cache
-cache
-  motion   id=203    curl=  14 ms  server=0.255472
-0.07443 ms  source=cache
-cache
-  motion   id=203    curl=  16 ms  server=0.255472
-0.118509 ms  source=cache
-cache
-  co2      id=204    curl=  14 ms  server=0.14076
-0.073049 ms  source=cache
-cache
-  co2      id=204    curl=  16 ms  server=0.14076
-0.090589 ms  source=cache
+  co2      id=204    curl=  16 ms  server=1.78201
+0.414756 ms  source=database
 cache
 --- Slave2 sensors ---
-  temperature id=301    curl=  15 ms  server=0.169518
-0.13762 ms  source=cache
+  temperature id=301    curl=  19 ms  server=40.7819
+0.560086 ms  source=database
 cache
-  temperature id=301    curl=  18 ms  server=0.169518
-0.107004 ms  source=cache
+  humidity id=302    curl=  16 ms  server=1.52806
+0.612251 ms  source=database
 cache
-  humidity id=302    curl=  16 ms  server=1.21403
-0.09628 ms  source=database
+  motion   id=303    curl=  15 ms  server=1.03118
+0.454093 ms  source=database
 cache
-  humidity id=302    curl=  17 ms  server=1.21403
-0.085293 ms  source=database
-cache
-  motion   id=303    curl=  17 ms  server=1.04016
-0.21848 ms  source=database
-cache
-  motion   id=303    curl=  16 ms  server=1.04016
-0.254265 ms  source=database
-cache
-  smoke    id=304    curl=  18 ms  server=1.25327
-0.101588 ms  source=database
-cache
-  smoke    id=304    curl=  16 ms  server=1.25327
-0.109559 ms  source=database
+  smoke    id=304    curl=  14 ms  server=1.65983
+0.251616 ms  source=database
 cache
 
 ========== SUMMARY ==========
-Sensors tested per round: 24
+Sensors tested per round: 12
 
 -- Client-side (curl round trip, includes network + HTTP overhead) --
-Round 1 (cold) average:   24 ms
-Round 2 (warm) average:   18 ms
-Improvement:              6 ms
-Improvement:              25.0%
+Round 1 (cold) average:   40 ms
+Round 2 (warm) average:   16 ms
+Improvement:              24 ms
+Improvement:              60.0%
 
 -- Server-side (response_time_ms from JSON, no network overhead) --
-Round 1 (cold) average:   0.67 ms
-Round 2 (warm) average:   0.41 ms
-Improvement:              0.26 ms
-Improvement:              38.8%
+Round 1 (cold) average:   5.70 ms
+Round 2 (warm) average:   4.66 ms
+Improvement:              1.04 ms
+Improvement:              18.2%
 ==============================
