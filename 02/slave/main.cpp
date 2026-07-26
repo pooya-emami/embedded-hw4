@@ -129,15 +129,14 @@ void handler(struct mg_connection *c, int ev, void *data) {
 
     auto t_start = std::chrono::steady_clock::now();
 
-    // unified source field
-    std::string source = "slave-cache";
+    std::string source = "slave_cache";
 
     // Try cache first
     std::string reply = cache_get(cache_key);
 
     // If not cached, read SQLite
     if (reply.empty()) {
-        source = "slave-database";
+        source = "slave_database";
         reply = get_sensor_data_sqlite(cfg.db, sensor_type, sensor_id);
 
         if (!reply.empty()) {

@@ -175,15 +175,14 @@ void handler(struct mg_connection *c, int ev, void *data) {
 
     auto t_start = std::chrono::steady_clock::now();
 
-    // Unified source field
-    std::string source = "master-cache";
+    std::string source = "master_cache";
 
     // Try cache first
     std::string answer = cache_get(cache_key);
 
     if (answer.empty()) {
         // Try local DB
-        source = "master-database";
+        source = "master_database";
         answer = search_database(cfg.db, sensor_type, sensor_id);
 
         // Try slaves
@@ -193,9 +192,9 @@ void handler(struct mg_connection *c, int ev, void *data) {
             slave_answer = ask_slave(cfg.slave1_ip, cfg.slave1_port, sensor_type, sensor_id);
             if (!slave_answer.empty() && slave_answer.find("\"error\"") == std::string::npos) {
                 if (slave_answer.find("\"source\":\"cache\"") != std::string::npos)
-                    source = "slave-cache";
+                    source = "slave_cache";
                 else
-                    source = "slave-database";
+                    source = "slave_database";
                 answer = slave_answer;
             }
 
@@ -203,9 +202,9 @@ void handler(struct mg_connection *c, int ev, void *data) {
                 slave_answer = ask_slave(cfg.slave2_ip, cfg.slave2_port, sensor_type, sensor_id);
                 if (!slave_answer.empty() && slave_answer.find("\"error\"") == std::string::npos) {
                     if (slave_answer.find("\"source\":\"cache\"") != std::string::npos)
-                        source = "slave-cache";
+                        source = "slave_cache";
                     else
-                        source = "slave-database";
+                        source = "slave_database";
                     answer = slave_answer;
                 }
             }
