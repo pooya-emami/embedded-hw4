@@ -15,19 +15,19 @@ case "$NODE" in
     master)
         DIR="../master"
         ROLE="master"
-        DB_INIT="db_init_master.sh"
+        DB_INIT="master_init_db.sh"
         DB_FILE="master.db"
         ;;
     slave1)
         DIR="../slave"
         ROLE="slave"
-        DB_INIT="db_init_slave1.sh"
+        DB_INIT="slave1_init_db.sh"
         DB_FILE="slave1.db"
         ;;
     slave2)
         DIR="../slave"
         ROLE="slave"
-        DB_INIT="db_init_slave2.sh"
+        DB_INIT="slave2_init_db.sh"
         DB_FILE="slave2.db"
         ;;
 esac
