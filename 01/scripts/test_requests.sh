@@ -1,6 +1,12 @@
 #!/bin/bash
-MASTER_IP="192.168.233.139"
-MASTER_PORT="8080"
+CONFIG_FILE="../master/config.example"
+
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "Error: Config file not found at $CONFIG_FILE"
+    exit 1
+fi
+
+source "$CONFIG_FILE"
 
 echo "Testing sensor queries:"
 echo "-----------------------"

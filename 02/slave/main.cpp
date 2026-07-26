@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <chrono>
 #include <sqlite3.h>
 #include <libmemcached/memcached.h>
 
@@ -101,6 +102,15 @@ std::string get_sensor_data_sqlite(const std::string &db_name,
     return result;
 }
 
+std::string annotate_json(std::string json, double ms, const std::string &source) {
+    if (json.empty() || json.back() != '}') return json;
+    json.pop_back();
+    std::stringstream out;
+    out << json << ",\"response_time_ms\":" << ms
+        << ",\"source\":\"" << source << "\"}";
+    return out.str();
+}
+
 void handler(struct mg_connection *c, int ev, void *data) {
     if (ev != MG_EV_HTTP_MSG) return;
 
@@ -110,20 +120,22 @@ void handler(struct mg_connection *c, int ev, void *data) {
         return;
 
     char type[64], id[64];
-
     mg_http_get_var(&msg->query, "sensor_type", type, sizeof(type));
     mg_http_get_var(&msg->query, "sensor_id", id, sizeof(id));
 
     std::string sensor_type = type;
     std::string sensor_id = id;
-
     std::string cache_key = sensor_type + "_" + sensor_id;
+
+    auto t_start = std::chrono::steady_clock::now();
+    std::string source = "cache";
 
     // Try cache first
     std::string reply = cache_get(cache_key);
 
     // If not cached, read SQLite
     if (reply.empty()) {
+        source = "database";
         reply = get_sensor_data_sqlite(cfg.db, sensor_type, sensor_id);
 
         // If found, store in cache
@@ -132,10 +144,14 @@ void handler(struct mg_connection *c, int ev, void *data) {
         }
     }
 
+    auto t_end = std::chrono::steady_clock::now();
+    double elapsed_ms = std::chrono::duration<double, std::milli>(t_end - t_start).count();
+
     if (!reply.empty()) {
+        std::string final_reply = annotate_json(reply, elapsed_ms, source);
         mg_http_reply(c, 200,
                       "Content-Type: application/json\r\n",
-                      "%s", reply.c_str());
+                      "%s", final_reply.c_str());
     } else {
         mg_http_reply(c, 404,
                       "Content-Type: application/json\r\n",

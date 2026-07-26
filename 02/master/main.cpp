@@ -3,6 +3,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <chrono>
 #include <sqlite3.h>
 #include <curl/curl.h>
 #include <libmemcached/memcached.h>
@@ -146,6 +147,15 @@ void cache_set(const std::string &key, const std::string &value) {
                   3600, 0);
 }
 
+std::string annotate_json(std::string json, double ms, const std::string &source) {
+    if (json.empty() || json.back() != '}') return json; // safety guard
+    json.pop_back();
+    std::stringstream out;
+    out << json << ",\"response_time_ms\":" << ms
+        << ",\"source\":\"" << source << "\"}";
+    return out.str();
+}
+
 void handler(struct mg_connection *c, int ev, void *data) {
     if (ev != MG_EV_HTTP_MSG) return;
 
@@ -160,18 +170,22 @@ void handler(struct mg_connection *c, int ev, void *data) {
 
     std::string sensor_type = type;
     std::string sensor_id = id;
-
     std::string cache_key = sensor_type + "_" + sensor_id;
+
+    auto t_start = std::chrono::steady_clock::now();
+    std::string source = "cache";
 
     // Try cache first
     std::string answer = cache_get(cache_key);
 
     if (answer.empty()) {
         // Try local DB
+        source = "database";
         answer = search_database(cfg.db, sensor_type, sensor_id);
 
         // Try slaves
         if (answer.empty()) {
+            source = "slave";
             answer = ask_slave(cfg.slave1_ip, cfg.slave1_port, sensor_type, sensor_id);
 
             if (answer.empty() || answer.find("\"error\"") != std::string::npos) {
@@ -180,15 +194,19 @@ void handler(struct mg_connection *c, int ev, void *data) {
         }
 
         // If found, store in cache
-        if (!answer.empty()) {
+        if (!answer.empty() && answer.find("\"error\"") == std::string::npos) {
             cache_set(cache_key, answer);
         }
     }
 
-    if (!answer.empty()) {
+    auto t_end = std::chrono::steady_clock::now();
+    double elapsed_ms = std::chrono::duration<double, std::milli>(t_end - t_start).count();
+
+    if (!answer.empty() && answer.find("\"error\"") == std::string::npos) {
+        std::string final_answer = annotate_json(answer, elapsed_ms, source);
         mg_http_reply(c, 200,
                       "Content-Type: application/json\r\n",
-                      "%s", answer.c_str());
+                      "%s", final_answer.c_str());
     } else {
         mg_http_reply(c, 404,
                       "Content-Type: application/json\r\n",
@@ -200,8 +218,6 @@ int main(int argc, char **argv) {
     load_config(argc > 1 ? argv[1] : "config.example");
 
     memc = memcached_create(nullptr);
-    std::stringstream memc_server;
-    memc_server << cfg.memcached_ip << ":" << cfg.memcached_port;
     memcached_server_add(memc, cfg.memcached_ip.c_str(), cfg.memcached_port);
 
     mg_mgr mgr{};
