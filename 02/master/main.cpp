@@ -53,7 +53,6 @@ void load_config(const std::string &file_name) {
     }
 }
 
-
 struct CurlBuffer {
     std::string data;
 };
@@ -150,7 +149,7 @@ void cache_set(const std::string &key, const std::string &value) {
 }
 
 std::string annotate_json(std::string json, double ms, const std::string &source) {
-    if (json.empty() || json.back() != '}') return json; // safety guard
+    if (json.empty() || json.back() != '}') return json;
     json.pop_back();
     std::stringstream out;
     out << json << ",\"response_time_ms\":" << ms
@@ -175,27 +174,44 @@ void handler(struct mg_connection *c, int ev, void *data) {
     std::string cache_key = sensor_type + "_" + sensor_id;
 
     auto t_start = std::chrono::steady_clock::now();
-    std::string source = "cache";
+
+    // Unified source field
+    std::string source = "master-cache";
 
     // Try cache first
     std::string answer = cache_get(cache_key);
 
     if (answer.empty()) {
         // Try local DB
-        source = "database";
+        source = "master-database";
         answer = search_database(cfg.db, sensor_type, sensor_id);
 
         // Try slaves
         if (answer.empty()) {
-            source = "slave";
-            answer = ask_slave(cfg.slave1_ip, cfg.slave1_port, sensor_type, sensor_id);
+            std::string slave_answer;
 
-            if (answer.empty() || answer.find("\"error\"") != std::string::npos) {
-                answer = ask_slave(cfg.slave2_ip, cfg.slave2_port, sensor_type, sensor_id);
+            slave_answer = ask_slave(cfg.slave1_ip, cfg.slave1_port, sensor_type, sensor_id);
+            if (!slave_answer.empty() && slave_answer.find("\"error\"") == std::string::npos) {
+                if (slave_answer.find("\"source\":\"cache\"") != std::string::npos)
+                    source = "slave-cache";
+                else
+                    source = "slave-database";
+                answer = slave_answer;
+            }
+
+            if (answer.empty()) {
+                slave_answer = ask_slave(cfg.slave2_ip, cfg.slave2_port, sensor_type, sensor_id);
+                if (!slave_answer.empty() && slave_answer.find("\"error\"") == std::string::npos) {
+                    if (slave_answer.find("\"source\":\"cache\"") != std::string::npos)
+                        source = "slave-cache";
+                    else
+                        source = "slave-database";
+                    answer = slave_answer;
+                }
             }
         }
 
-        // If found, store in cache
+        // Cache the result
         if (!answer.empty() && answer.find("\"error\"") == std::string::npos) {
             cache_set(cache_key, answer);
         }
