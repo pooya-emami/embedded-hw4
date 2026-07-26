@@ -26,13 +26,6 @@ struct Config {
 Config cfg;
 memcached_st *memc = nullptr;
 
-static std::string trim(const std::string &s) {
-    size_t start = s.find_first_not_of(" \t\r\n");
-    size_t end = s.find_last_not_of(" \t\r\n");
-    if (start == std::string::npos) return "";
-    return s.substr(start, end - start + 1);
-}
-
 void load_config(const std::string &file_name) {
     std::ifstream f(file_name);
     if (!f.is_open()) {
@@ -48,8 +41,6 @@ void load_config(const std::string &file_name) {
         std::string key, value;
         std::stringstream ss(line);
         if (std::getline(ss, key, '=') && std::getline(ss, value)) {
-            key = trim(key);
-            value = trim(value);
             if (value.empty()) continue;
             if (key == "MASTER_PORT") cfg.port = std::stoi(value);
             else if (key == "MASTER_DB") cfg.db = value;
