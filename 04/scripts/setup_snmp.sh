@@ -20,7 +20,6 @@ SNMP_DIR="$SCRIPT_DIR/../snmp"
 
 cd "$SNMP_DIR"
 
-# Optional DB generation
 if $DBGEN; then
     if [[ "$DB_FILE" == *master* ]]; then
         ./db_init_master.sh "$DB_FILE" "$CSV_FILE"

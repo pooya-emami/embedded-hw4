@@ -1,29 +1,32 @@
 #!/bin/bash
 
-ROLE=$1
+NODE=$1
 CONFIG="config.example"
 DBGEN=false
 
 for a in "$@"; do
     [[ "$a" == "--dbgen" ]] && DBGEN=true
-    [[ "$a" != "$ROLE" && "$a" != "--dbgen" ]] && CONFIG="$a"
+    [[ "$a" != "$NODE" && "$a" != "--dbgen" ]] && CONFIG="$a"
 done
 
-[ -z "$ROLE" ] && echo "Usage: $0 master|slave1|slave2 [config] [--dbgen]" && exit 1
+[ -z "$NODE" ] && echo "Usage: $0 master|slave1|slave2 [config] [--dbgen]" && exit 1
 
-case "$ROLE" in
+case "$NODE" in
     master)
         DIR="../master"
+        ROLE="master"
         DB_INIT="db_init_master.sh"
         DB_FILE="master.db"
         ;;
     slave1)
         DIR="../slave"
+        ROLE="slave"
         DB_INIT="db_init_slave1.sh"
         DB_FILE="slave1.db"
         ;;
     slave2)
         DIR="../slave"
+        ROLE="slave"
         DB_INIT="db_init_slave2.sh"
         DB_FILE="slave2.db"
         ;;
