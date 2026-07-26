@@ -51,21 +51,18 @@ void load_config(const std::string &file_name) {
             key = trim(key);
             value = trim(value);
             if (value.empty()) continue;
-
-            try {
-                if (key == "MASTER_PORT") cfg.port = std::stoi(value);
-                else if (key == "MASTER_DB") cfg.db = value;
-                else if (key == "SLAVE1_IP") cfg.slave1_ip = value;
-                else if (key == "SLAVE1_PORT") cfg.slave1_port = std::stoi(value);
-                else if (key == "SLAVE2_IP") cfg.slave2_ip = value;
-                else if (key == "SLAVE2_PORT") cfg.slave2_port = std::stoi(value);
-            } catch (const std::exception &e) {
-                std::cerr << "Warning: bad config value for " << key
-                          << " = \"" << value << "\" (" << e.what() << ")\n";
-            }
+            if (key == "MASTER_PORT") cfg.port = std::stoi(value);
+            else if (key == "MASTER_DB") cfg.db = value;
+            else if (key == "SLAVE1_IP") cfg.slave1_ip = value;
+            else if (key == "SLAVE1_PORT") cfg.slave1_port = std::stoi(value);
+            else if (key == "SLAVE2_IP") cfg.slave2_ip = value;
+            else if (key == "SLAVE2_PORT") cfg.slave2_port = std::stoi(value);
+            else if (key == "MEMCACHED_IP") cfg.memcached_ip = value;
+            else if (key == "MEMCACHED_PORT") cfg.memcached_port = std::stoi(value);
         }
     }
 }
+
 
 struct CurlBuffer {
     std::string data;
