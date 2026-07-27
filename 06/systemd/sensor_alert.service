@@ -1,0 +1,16 @@
+[Unit]
+Description=Sensor Alert Daemon
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/usr/local/bin
+ExecStart=/usr/local/bin/alert_daemon /etc/sensor-alert/config.example
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
