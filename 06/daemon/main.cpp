@@ -164,6 +164,8 @@ void check_sensor(const Sensor &s) {
 }
 
 int main(int argc, char **argv) {
+    std::cout.setf(std::ios::unitbuf);
+
     load_config(argc > 1 ? argv[1] : "config.example");
 
     std::cout << "========================================\n";
