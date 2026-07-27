@@ -1,5 +1,5 @@
 #!/bin/bash
-# setup_snmp.sh
+# setup_snmp.sh - Configure SNMP on master node
 
 set -euo pipefail
 
@@ -11,7 +11,7 @@ for a in "$@"; do
 done
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SNMP_DIR="$SCRIPT_DIR"
+SNMP_DIR="$SCRIPT_DIR/../snmp"
 CONFIG_FILE="$SNMP_DIR/config.example"
 
 # Source config
@@ -21,7 +21,7 @@ PORT="${SNMP_PORT:-1161}"
 MASTER_API_PORT="${MASTER_API_PORT:-8080}"
 MASTER_API_URL="http://127.0.0.1:$MASTER_API_PORT"
 
-# Generate sensor list from config (same config file)
+# Generate sensor list from config
 SENSOR_LIST_FILE="/tmp/sensors_list.txt"
 grep "^SENSOR=" "$CONFIG_FILE" | cut -d'=' -f2 > "$SENSOR_LIST_FILE"
 
@@ -40,11 +40,14 @@ mkdir -p "$PERSIST_DIR"
 
 RUN_CMD="snmpd -f -Lo -m '' -C -c $CONF_FILE -p $PID_FILE --persistentDir=$PERSIST_DIR udp:0.0.0.0:$PORT"
 
-echo "SNMP setup complete for master."
+echo "========================================"
+echo "SNMP Setup Complete"
+echo "========================================"
 echo "Config: $CONF_FILE"
 echo "Port:   $PORT"
 echo "Master API: $MASTER_API_URL"
 echo "Sensors loaded: $(wc -l < "$SENSOR_LIST_FILE")"
+echo "========================================"
 
 if $RUN; then
     echo "Starting snmpd for master..."
@@ -52,7 +55,7 @@ if $RUN; then
 else
     echo ""
     echo "Run the daemon with:"
-    echo "  $RUN_CMD"
+    echo "  $RUN_CMD 2>&1 | grep -v -e 'init_smux' -e 'Connection from UDP'"
     echo ""
     echo "Or use:"
     echo "  ./setup_snmp.sh --run"
