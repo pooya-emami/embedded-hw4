@@ -11,25 +11,25 @@ for a in "$@"; do
 done
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SNMP_DIR="$SCRIPT_DIR/../snmp"
+SNMP_DIR="$SCRIPT_DIR"
 CONFIG_FILE="$SNMP_DIR/config.example"
 
+# Source config
 [ -f "$CONFIG_FILE" ] && source "$CONFIG_FILE"
 
 PORT="${SNMP_PORT:-1161}"
 MASTER_API_PORT="${MASTER_API_PORT:-8080}"
 MASTER_API_URL="http://127.0.0.1:$MASTER_API_PORT"
 
-DATA_DIR="${DATA_DIR:-$SNMP_DIR/../data}"
-MASTER_CSV="$DATA_DIR/master_sensors.csv"
-SLAVE1_CSV="$DATA_DIR/slave1_sensors.csv"
-SLAVE2_CSV="$DATA_DIR/slave2_sensors.csv"
+# Generate sensor list from config (same config file)
+SENSOR_LIST_FILE="/tmp/sensors_list.txt"
+grep "^SENSOR=" "$CONFIG_FILE" | cut -d'=' -f2 > "$SENSOR_LIST_FILE"
 
 CONF_FILE="$SNMP_DIR/snmpd_master.conf"
 
 cat > "$CONF_FILE" <<CONF
 rocommunity public
-pass .1.3.6.1.4.1.99999.1 /bin/bash $SNMP_DIR/sensor_pass.sh $MASTER_API_URL $MASTER_CSV $SLAVE1_CSV $SLAVE2_CSV
+pass .1.3.6.1.4.1.99999.1 /bin/bash $SNMP_DIR/sensor_pass.sh $MASTER_API_URL $SENSOR_LIST_FILE
 CONF
 
 chmod +x "$SNMP_DIR/sensor_pass.sh"
@@ -44,13 +44,19 @@ echo "SNMP setup complete for master."
 echo "Config: $CONF_FILE"
 echo "Port:   $PORT"
 echo "Master API: $MASTER_API_URL"
+echo "Sensors loaded: $(wc -l < "$SENSOR_LIST_FILE")"
 
 if $RUN; then
     echo "Starting snmpd for master..."
     exec bash -c "$RUN_CMD 2>&1 | grep -v -e 'init_smux' -e 'Connection from UDP'"
 else
+    echo ""
     echo "Run the daemon with:"
     echo "  $RUN_CMD"
+    echo ""
     echo "Or use:"
     echo "  ./setup_snmp.sh --run"
+    echo ""
+    echo "Test with:"
+    echo "  snmpwalk -v2c -c public <master_ip>:$PORT .1.3.6.1.4.1.99999.1"
 fi
