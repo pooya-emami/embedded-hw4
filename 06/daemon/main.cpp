@@ -8,6 +8,7 @@
 #include <chrono>
 #include <ctime>
 #include <curl/curl.h>
+#include <sqlite3.h>
 
 struct Sensor {
     std::string type;
@@ -23,11 +24,12 @@ struct Config {
     double temp_max = 35.0;
     double humidity_min = 20.0;
     double humidity_max = 80.0;
-    
-    std::vector<Sensor> sensors;  // List of sensors to monitor
+
+    std::vector<Sensor> sensors;
 };
 
 Config cfg;
+sqlite3 *alert_db = nullptr;
 
 void load_config(const std::string &filename) {
     std::ifstream f(filename);
@@ -44,7 +46,7 @@ void load_config(const std::string &filename) {
         std::stringstream ss(line);
         if (std::getline(ss, key, '=') && std::getline(ss, value)) {
             if (value.empty()) continue;
-            
+
             if (key == "MASTER_IP") cfg.master_ip = value;
             else if (key == "MASTER_PORT") cfg.master_port = std::stoi(value);
             else if (key == "CHECK_INTERVAL_SECONDS") cfg.check_interval_seconds = std::stoi(value);
@@ -52,8 +54,6 @@ void load_config(const std::string &filename) {
             else if (key == "HUMIDITY_MIN") cfg.humidity_min = std::stod(value);
             else if (key == "HUMIDITY_MAX") cfg.humidity_max = std::stod(value);
             else if (key == "SENSOR") {
-                // Format: SENSOR=type,id,name
-                // Example: SENSOR=temperature,101,Floor1_Room101_Temp
                 std::stringstream sensor_ss(value);
                 Sensor s;
                 std::getline(sensor_ss, s.type, ',');
@@ -115,6 +115,46 @@ std::string now() {
     return buf;
 }
 
+bool init_alert_db(const std::string &db_path) {
+    if (sqlite3_open(db_path.c_str(), &alert_db) != SQLITE_OK) {
+        std::cerr << "Error: Could not open alert DB: " << db_path << "\n";
+        return false;
+    }
+
+    const char *sql =
+        "CREATE TABLE IF NOT EXISTS alerts ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        "sensor_id TEXT,"
+        "sensor_name TEXT,"
+        "alert_type TEXT,"
+        "sensor_value TEXT,"
+        "created_at TEXT,"
+        "status TEXT"
+        ");";
+
+    char *err = nullptr;
+    if (sqlite3_exec(alert_db, sql, nullptr, nullptr, &err) != SQLITE_OK) {
+        std::cerr << "Error creating alerts table: " << err << "\n";
+        sqlite3_free(err);
+        return false;
+    }
+
+    return true;
+}
+
+void store_alert(const Sensor &s, const std::string &alert_type, const std::string &value) {
+    std::string sql =
+        "INSERT INTO alerts (sensor_id, sensor_name, alert_type, sensor_value, created_at, status) "
+        "VALUES ('" + s.id + "', '" + s.name + "', '" + alert_type + "', '" + value + "', '" +
+        now() + "', 'active');";
+
+    char *err = nullptr;
+    if (sqlite3_exec(alert_db, sql.c_str(), nullptr, nullptr, &err) != SQLITE_OK) {
+        std::cerr << "Error inserting alert: " << err << "\n";
+        sqlite3_free(err);
+    }
+}
+
 std::unordered_set<std::string> active_alerts;
 
 void raise_alert(const Sensor &s, const std::string &alert_type, const std::string &value) {
@@ -128,11 +168,13 @@ void raise_alert(const Sensor &s, const std::string &alert_type, const std::stri
               << " (" << s.name << ")"
               << " | Value: " << value
               << " | Time: " << now() << "\n";
+
+    store_alert(s, alert_type, value);
 }
 
 void check_sensor(const Sensor &s) {
     std::string json = get_sensor_value(s.type, s.id);
-    
+
     if (json.empty()) {
         raise_alert(s, "no_data", "none");
         return;
@@ -168,6 +210,11 @@ int main(int argc, char **argv) {
 
     load_config(argc > 1 ? argv[1] : "config.example");
 
+    if (!init_alert_db("alerts.db")) {
+        std::cerr << "Failed to initialize alert DB.\n";
+        return 1;
+    }
+
     std::cout << "========================================\n";
     std::cout << "     Sensor Alert Daemon Started\n";
     std::cout << "========================================\n";
@@ -185,8 +232,10 @@ int main(int argc, char **argv) {
 
         std::cout << "[" << now() << "] Check complete. Sleeping "
                   << cfg.check_interval_seconds << " seconds...\n\n";
+
         std::this_thread::sleep_for(std::chrono::seconds(cfg.check_interval_seconds));
     }
 
+    sqlite3_close(alert_db);
     return 0;
 }

@@ -1,6 +1,6 @@
 CC = g++
 CFLAGS = -Wall -Wextra -O2 -std=c++11
-LIBS = -lcurl
+LIBS = -lcurl -lsqlite3
 
 TARGET = alert_daemon
 
