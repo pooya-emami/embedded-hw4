@@ -14,26 +14,18 @@ source "$CONFIG_FILE"
 
 # Extract all SENSOR= variables from sourced config
 all_sensors() {
-    compgen -v | while read var; do
-        if [[ "$var" == SENSOR* ]]; then
-            echo "${!var}"
-        fi
-    done | sort -t',' -k2,2n
+    grep '^SENSOR=' "$CONFIG_FILE" 2>/dev/null \
+        | sed 's/^SENSOR=//' \
+        | sort -t',' -k2,2n
 }
+
 
 # Find sensor by ID
 get_sensor_by_id() {
     local search_id="$1"
-    compgen -v | while read var; do
-        if [[ "$var" == SENSOR* ]]; then
-            val="${!var}"
-            if echo "$val" | grep -q ",$search_id,"; then
-                echo "$val"
-                return 0
-            fi
-        fi
-    done
-    return 1
+    grep "^SENSOR=.*,$search_id," "$CONFIG_FILE" 2>/dev/null \
+        | sed 's/^SENSOR=//' \
+        | head -1
 }
 
 extract_field() {
