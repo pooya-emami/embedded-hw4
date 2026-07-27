@@ -5,6 +5,9 @@
 # Object files
 *.o
 
+# Configuration files
+*.conf
+
 # Executables
 *.out
 *.exe
