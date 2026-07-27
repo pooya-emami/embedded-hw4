@@ -11,9 +11,9 @@ HUMIDITY_MAX=80.0
 # Sensors to monitor (format: SENSOR=type,id,name)
 # Master sensors
 SENSOR=temperature,101,Floor1_Room101_Temp
-SENSOR=temperature,104,Floor1_Lobby_Temp
 SENSOR=humidity,102,Floor1_Room101_Humidity
 SENSOR=motion,103,Floor1_Corridor_Motion
+SENSOR=temperature,104,Floor1_Lobby_Temp
 
 # Slave1 sensors
 SENSOR=temperature,201,Floor2_Room201_Temp

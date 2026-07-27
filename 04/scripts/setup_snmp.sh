@@ -1,11 +1,9 @@
 #!/bin/bash
-# setup_snmp.sh - Configure SNMP on master node
+# setup_snmp.sh
 
 set -euo pipefail
 
 RUN=false
-
-# Parse args
 for a in "$@"; do
     [[ "$a" == "--run" ]] && RUN=true
 done
@@ -14,22 +12,18 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SNMP_DIR="$SCRIPT_DIR/../snmp"
 CONFIG_FILE="$SNMP_DIR/config.example"
 
-# Source config
-[ -f "$CONFIG_FILE" ] && source "$CONFIG_FILE"
+# Load config
+source "$CONFIG_FILE"
 
 PORT="${SNMP_PORT:-1161}"
 MASTER_API_PORT="${MASTER_API_PORT:-8080}"
 MASTER_API_URL="http://127.0.0.1:$MASTER_API_PORT"
 
-# Generate sensor list from config
-SENSOR_LIST_FILE="/tmp/sensors_list.txt"
-grep "^SENSOR=" "$CONFIG_FILE" | cut -d'=' -f2 > "$SENSOR_LIST_FILE"
-
 CONF_FILE="$SNMP_DIR/snmpd_master.conf"
 
 cat > "$CONF_FILE" <<CONF
 rocommunity public
-pass .1.3.6.1.4.1.99999.1 /bin/bash $SNMP_DIR/sensor_pass.sh $MASTER_API_URL $SENSOR_LIST_FILE
+pass .1.3.6.1.4.1.99999.1 /bin/bash $SNMP_DIR/sensor_pass.sh $MASTER_API_URL $CONFIG_FILE
 CONF
 
 chmod +x "$SNMP_DIR/sensor_pass.sh"
@@ -46,7 +40,7 @@ echo "========================================"
 echo "Config: $CONF_FILE"
 echo "Port:   $PORT"
 echo "Master API: $MASTER_API_URL"
-echo "Sensors loaded: $(wc -l < "$SENSOR_LIST_FILE")"
+echo "Sensors loaded: $(compgen -v | grep -c '^SENSOR')"
 echo "========================================"
 
 if $RUN; then
