@@ -7,6 +7,7 @@ CHECK_INTERVAL_SECONDS=30
 TEMP_MAX=35.0
 HUMIDITY_MIN=20.0
 HUMIDITY_MAX=80.0
+CO2_MAX=1000
 
 # Sensors to monitor (format: SENSOR=type,id,name)
 # Master sensors

@@ -24,6 +24,7 @@ struct Config {
     double temp_max = 35.0;
     double humidity_min = 20.0;
     double humidity_max = 80.0;
+    double co2_max = 1000.0;
 
     std::vector<Sensor> sensors;
 };
@@ -53,6 +54,7 @@ void load_config(const std::string &filename) {
             else if (key == "TEMP_MAX") cfg.temp_max = std::stod(value);
             else if (key == "HUMIDITY_MIN") cfg.humidity_min = std::stod(value);
             else if (key == "HUMIDITY_MAX") cfg.humidity_max = std::stod(value);
+            else if (key == "CO2_MAX") cfg.co2_max = std::stod(value);
             else if (key == "SENSOR") {
                 std::stringstream sensor_ss(value);
                 Sensor s;
@@ -195,7 +197,7 @@ void check_sensor(const Sensor &s) {
             raise_alert(s, "humidity_high", value_str);
     }
 
-    if (s.type == "co2" && value > 1000)
+    if (s.type == "co2" && value > cfg.co2_max)
         raise_alert(s, "co2_high", value_str);
 
     if (s.type == "smoke" && value == 1)
