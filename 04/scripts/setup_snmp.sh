@@ -1,4 +1,6 @@
 #!/bin/bash
+# setup_snmp.sh
+
 set -euo pipefail
 
 NODE=""
@@ -15,25 +17,26 @@ done
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SNMP_DIR="$SCRIPT_DIR/../snmp"
+CONFIG_FILE="$SNMP_DIR/config.example"
+
+[ -f "$CONFIG_FILE" ] && source "$CONFIG_FILE"
+PORT="${SNMP_PORT:-1161}"
 
 case "$NODE" in
     master)
         DB_FILE="master.db"
         DB_INIT="db_init_master.sh"
         CONF_FILE="snmpd_master.conf"
-        PORT=1161
         ;;
     slave1)
         DB_FILE="slave1.db"
         DB_INIT="db_init_slave1.sh"
         CONF_FILE="snmpd_slave1.conf"
-        PORT=1162
         ;;
     slave2)
         DB_FILE="slave2.db"
         DB_INIT="db_init_slave2.sh"
         CONF_FILE="snmpd_slave2.conf"
-        PORT=1163
         ;;
     *)
         echo "Invalid node: $NODE"
@@ -62,14 +65,14 @@ echo "SNMP setup complete for $NODE."
 echo "Config: $SNMP_DIR/$CONF_FILE"
 echo "Port:   $PORT"
 
-RUN_CMD="snmpd -f -Lo -C -c $SNMP_DIR/$CONF_FILE -p $PID_FILE --persistentDir=$PERSIST_DIR udp:0.0.0.0:$PORT"
+RUN_CMD="snmpd -f -Lo -m '' -C -c $SNMP_DIR/$CONF_FILE -p $PID_FILE --persistentDir=$PERSIST_DIR udp:0.0.0.0:$PORT"
 
 if $RUN; then
-    echo "Starting snmpd for $NODE ..."
-    exec $RUN_CMD
+    echo "Starting snmpd for $NODE..."
+    exec bash -c "$RUN_CMD 2>&1 | grep -v -e 'init_smux' -e 'Connection from UDP'"
 else
-    echo "Run the daemon:"
-    echo "  $RUN_CMD"
+    echo "Run the daemon with (no sudo required):"
+    echo "  $RUN_CMD 2>&1 | grep -v -e 'init_smux' -e 'Connection from UDP'"
     echo "Or re-run this script with --run to start it directly:"
     echo "  ./setup_snmp.sh $NODE --run"
     echo "Test with:"
