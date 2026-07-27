@@ -1,6 +1,4 @@
 #!/bin/bash
-# setup_snmp.sh
-
 set -euo pipefail
 
 NODE=""
@@ -50,9 +48,23 @@ $DBGEN && ./$DB_INIT
 
 [ ! -f "$DB_FILE" ] && echo "Missing DB: $DB_FILE (run with --dbgen)" && exit 1
 
+MASTER_API_PORT="${MASTER_API_PORT:-8080}"
+MASTER_API_URL="http://127.0.0.1:$MASTER_API_PORT"
+DATA_DIR="${DATA_DIR:-$SNMP_DIR/../data}"
+MASTER_CSV="$DATA_DIR/master_sensors.csv"
+SLAVE1_CSV="$DATA_DIR/slave1_sensors.csv"
+SLAVE2_CSV="$DATA_DIR/slave2_sensors.csv"
+
+if [ "$NODE" != "master" ]; then
+    echo "Note: per the assignment's architecture, only the MASTER node needs"
+    echo "an SNMP agent — it routes all lookups through its own HTTP API,"
+    echo "which already forwards to slaves internally. Slave nodes don't need"
+    echo "snmpd running for the operator-facing SNMP path."
+fi
+
 cat > "$CONF_FILE" <<EOF
 rocommunity public
-pass .1.3.6.1.4.1.99999.1 /bin/bash $SNMP_DIR/sensor_pass.sh $SNMP_DIR/$DB_FILE
+pass .1.3.6.1.4.1.99999.1 /bin/bash $SNMP_DIR/sensor_pass.sh $MASTER_API_URL $MASTER_CSV $SLAVE1_CSV $SLAVE2_CSV
 EOF
 
 chmod +x sensor_pass.sh
@@ -71,7 +83,7 @@ if $RUN; then
     echo "Starting snmpd for $NODE..."
     exec bash -c "$RUN_CMD 2>&1 | grep -v -e 'init_smux' -e 'Connection from UDP'"
 else
-    echo "Run the daemon with (no sudo required):"
+    echo "Run the daemon:"
     echo "  $RUN_CMD 2>&1 | grep -v -e 'init_smux' -e 'Connection from UDP'"
     echo "Or re-run this script with --run to start it directly:"
     echo "  ./setup_snmp.sh $NODE --run"

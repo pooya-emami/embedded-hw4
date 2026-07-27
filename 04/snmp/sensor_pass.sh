@@ -1,40 +1,54 @@
 #!/bin/bash
 # sensor_pass.sh
 #
-# Usage (called by snmpd's "pass" directive):
-#   sensor_pass.sh <db_file> -g <OID>   GET
-#   sensor_pass.sh <db_file> -n <OID>   GETNEXT (used by snmpwalk)
-#
-# OID layout: BASE.<sensor_id>.<field>
-#   field: 1=name 2=type 3=value 4=unit 5=recorded_at
+# Called by snmpd's "pass" directive on the MASTER node only.
+# Usage:
+#   sensor_pass.sh <master_api_url> <master_csv> <slave1_csv> <slave2_csv> -g <OID>
+#   sensor_pass.sh <master_api_url> <master_csv> <slave1_csv> <slave2_csv> -n <OID>
 
-DB_FILE="$1"
-MODE="$2"
-OID="$3"
+API_URL="$1"
+MASTER_CSV="$2"
+SLAVE1_CSV="$3"
+SLAVE2_CSV="$4"
+MODE="$5"
+OID="$6"
 BASE=".1.3.6.1.4.1.99999.1"
 
 [[ "$OID" != .* ]] && OID=".$OID"
 
-
-all_oids() {
-    sqlite3 "$DB_FILE" \
-        "SELECT DISTINCT sensor_id FROM sensors ORDER BY CAST(sensor_id AS INTEGER);" 2>/dev/null |
-    while read -r sid; do for f in 1 2 3 4 5; do echo "${BASE}.${sid}.${f}"; done; done
+all_sensors() {
+    for f in "$MASTER_CSV" "$SLAVE1_CSV" "$SLAVE2_CSV"; do
+        [ -f "$f" ] && tail -n +2 "$f" | awk -F',' '{print $1"\t"$2}'
+    done | sort -u -t$'\t' -k1,1 | sort -t$'\t' -k1,1n
 }
 
+type_for_id() {
+    all_sensors | awk -F'\t' -v id="$1" '$1==id {print $2; exit}'
+}
+
+extract_field() {
+    echo "$1" | grep -oP "\"$2\":\"\K[^\"]*"
+}
 
 emit() {
-    local oid="$1" sid field row
+    local oid="$1" sid field type resp
     IFS='.' read -ra P <<< "${oid#$BASE}"
     sid="${P[1]}"; field="${P[2]}"
     [[ -z "$sid" || -z "$field" ]] && return 1
 
-    row=$(sqlite3 "$DB_FILE" "SELECT s.sensor_name, s.sensor_type, r.value, s.unit, r.recorded_at
-        FROM sensors s JOIN sensor_readings r ON s.sensor_id = r.sensor_id
-        WHERE s.sensor_id = '$sid' ORDER BY datetime(r.recorded_at) DESC LIMIT 1;")
-    [ -z "$row" ] && return 1
+    type=$(type_for_id "$sid")
+    [ -z "$type" ] && return 1
 
-    IFS='|' read -r NAME TYPE VALUE UNIT TIME <<< "$row"
+    resp=$(curl -s --max-time 5 "$API_URL/query?sensor_type=$type&sensor_id=$sid")
+    [[ -z "$resp" || "$resp" == *"\"error\""* ]] && return 1
+
+    local NAME TYPE VALUE UNIT TIME
+    NAME=$(extract_field "$resp" "sensor_name")
+    TYPE=$(extract_field "$resp" "sensor_type")
+    VALUE=$(extract_field "$resp" "value")
+    UNIT=$(extract_field "$resp" "unit")
+    TIME=$(extract_field "$resp" "recorded_at")
+
     local vals=("$NAME" "$TYPE" "$VALUE" "$UNIT" "$TIME")
     local val="${vals[$((field - 1))]}"
     [ -z "$val" ] && return 1
@@ -49,13 +63,14 @@ case "$MODE" in
     -n)
         IFS='.' read -ra CUR <<< "${OID#$BASE}"
         CUR_SID="${CUR[1]:--1}"; CUR_F="${CUR[2]:--1}"
-        while read -r candidate; do
-            IFS='.' read -ra C <<< "${candidate#$BASE}"
-            csid="${C[1]}"; cf="${C[2]}"
-            if (( csid > CUR_SID )) || { (( csid == CUR_SID )) && (( cf > CUR_F )); }; then
-                emit "$candidate"
-                exit 0
-            fi
-        done < <(all_oids)
+
+        while IFS=$'\t' read -r sid _; do
+            for f in 1 2 3 4 5; do
+                if (( sid > CUR_SID )) || { (( sid == CUR_SID )) && (( f > CUR_F )); }; then
+                    emit "${BASE}.${sid}.${f}"
+                    exit 0
+                fi
+            done
+        done < <(all_sensors)
         ;;
 esac
