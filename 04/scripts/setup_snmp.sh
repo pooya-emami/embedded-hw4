@@ -65,7 +65,7 @@ echo "Port:   $PORT"
 RUN_CMD="snmpd -f -Lo -C -c $SNMP_DIR/$CONF_FILE -p $PID_FILE --persistentDir=$PERSIST_DIR udp:0.0.0.0:$PORT"
 
 if $RUN; then
-    echo "Starting snmpd for $NODE (no sudo needed, unprivileged port $PORT)..."
+    echo "Starting snmpd for $NODE ..."
     exec $RUN_CMD
 else
     echo "Run the daemon:"
