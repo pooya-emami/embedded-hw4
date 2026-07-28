@@ -17,7 +17,7 @@ pkill -x memcached &>/dev/null
 sleep 1
 
 echo "[Slave] Starting memcached manually..."
-memcached -l "$MEMCACHED_IP" -p "$MEMCACHED_PORT" -d
+memcached -l "$MEMCACHED_IP" -p "$MEMCACHED_PORT" -o modern -d
 
 echo "[Slave] Waiting for memcached to be ready..."
 for i in {1..20}; do

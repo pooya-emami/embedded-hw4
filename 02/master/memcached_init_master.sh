@@ -24,7 +24,7 @@ pkill -x memcached &>/dev/null || true
 sleep 1
 
 echo "[Master] Starting memcached manually..."
-memcached -l "$MEMCACHED_IP" -p "$MEMCACHED_PORT" -u "$(whoami)" -d
+memcached -l "$MEMCACHED_IP" -p "$MEMCACHED_PORT" -o modern -d
 
 echo "[Master] Waiting for memcached to be ready..."
 READY=0
