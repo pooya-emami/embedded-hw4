@@ -1,5 +1,5 @@
 # System Info
-USERNAME="pooya"
+USERNAME=pooya
 
 MASTER_IP=192.168.233.139
 MASTER_PORT=8080
