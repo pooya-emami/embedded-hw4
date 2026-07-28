@@ -147,18 +147,29 @@ cd 01/scripts
 ## Configuration
 
 ### Configuration File Format (config.example)
-This is just a template and the real values are provided in the config.example
+cofiguration on master side:
 ```
-{
-    "port": 8080,
-    "db_path": "sensors.db",
-    "master_host": "192.168.1.100",
-    "master_port": 8080,
-    "slaves": [
-        {"host": "192.168.1.101", "port": 8081},
-        {"host": "192.168.1.102", "port": 8082}
-    ]
-}
+MASTER_IP=192.168.xxx.xxx
+
+MASTER_PORT=8080
+MASTER_DB=master.db
+
+SLAVE1_IP=192.168.xxx.xxx
+SLAVE1_PORT=8081
+
+SLAVE2_IP=192.168.xxx.xxx
+SLAVE2_PORT=8082
+```
+cofiguration on slave side:
+slave 1:
+```
+SLAVE_PORT=8081
+SLAVE_DB=slave1.db 
+```
+slave 2:
+```
+SLAVE_PORT=8082
+SLAVE_DB=slave2.db 
 ```
 
 ### Configuration Parameters
