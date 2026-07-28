@@ -9,12 +9,10 @@ declare -A SENSOR_NAME
 declare -A SENSOR_NODE
 
 while IFS= read -r line; do
-    # USERNAME
     if [[ "$line" == USERNAME=* ]]; then
         USERNAME="${line#USERNAME=}"
     fi
 
-    # IPs
     if [[ "$line" == MASTER_IP=* ]]; then
         MASTER_IP="${line#MASTER_IP=}"
     fi
@@ -25,7 +23,6 @@ while IFS= read -r line; do
         SLAVE2_IP="${line#SLAVE2_IP=}"
     fi
 
-    # DB filenames
     if [[ "$line" == MASTER_DB=* ]]; then
         MASTER_DB="${line#MASTER_DB=}"
     fi
@@ -36,7 +33,6 @@ while IFS= read -r line; do
         SLAVE2_DB="${line#SLAVE2_DB=}"
     fi
 
-    # Sensors
     [[ "$line" != SENSOR=* ]] && continue
 
     entry="${line#SENSOR=}"
@@ -66,8 +62,8 @@ if [[ -z "$NODE" || -z "$MODE" || -z "$SENSOR_ID" ]]; then
     echo "Usage:"
     echo "  ./alert_test.sh master --sensor 101 25"
     echo "  ./alert_test.sh slave1 --sensor 202 50"
-    echo "  ./alert_test.sh slave2 --invalid_data 304 abc"
-    echo "  ./alert_test.sh master --no_data 101"
+    echo "  ./alert_test.sh slave2 --sensor 304 abc"
+    echo "  ./alert_test.sh slave2 --sensor 304 --rm_data"
     exit 1
 fi
 
@@ -100,8 +96,8 @@ esac
 
 echo "=== Testing sensor $SENSOR_ID ($TYPE, $NAME) on $NODE ==="
 
-if [[ "$MODE" == "--no_data" ]]; then
-    echo "[ALERT] no_data"
+if [[ "$MODE" == "--sensor" && "$VALUE" == "--rm_data" ]]; then
+    echo "[ALERT] rm_data"
 
     CMD="DELETE FROM sensors WHERE sensor_id='$SENSOR_ID';"
 
@@ -111,41 +107,20 @@ if [[ "$MODE" == "--no_data" ]]; then
         ssh "$USERNAME@$IP" "sqlite3 $DB \"$CMD\""
     fi
 
-    echo "Sensor $SENSOR_ID deleted from $NODE DB"
-    exit 0
-fi
-
-if [[ "$MODE" == "--invalid_data" ]]; then
-    if [[ -z "$VALUE" ]]; then
-        echo "Error: invalid_data requires a value (e.g., abc)"
-        exit 1
-    fi
-
-    echo "[ALERT] invalid_data"
-
-    CMD="INSERT INTO sensor_readings(sensor_id,value,recorded_at)
-         VALUES('$SENSOR_ID','$VALUE',datetime('now'));"
-
-    if [[ "$NODE" == "master" ]]; then
-        sqlite3 "$DB" "$CMD"
-    else
-        ssh "$USERNAME@$IP" "sqlite3 $DB \"$CMD\""
-    fi
-
-    echo "Inserted invalid value '$VALUE' for sensor $SENSOR_ID on $NODE"
+    echo "Sensor $SENSOR_ID removed from $NODE DB"
     exit 0
 fi
 
 if [[ "$MODE" == "--sensor" ]]; then
     if [[ -z "$VALUE" ]]; then
-        echo "Error: --sensor requires a numeric value"
+        echo "Error: --sensor requires a value or --rm_data"
         exit 1
     fi
 
     echo "[INFO] inserting value $VALUE for sensor $SENSOR_ID"
 
     CMD="INSERT INTO sensor_readings(sensor_id,value,recorded_at)
-         VALUES('$SENSOR_ID',$VALUE,datetime('now'));"
+         VALUES('$SENSOR_ID','$VALUE',datetime('now'));"
 
     if [[ "$NODE" == "master" ]]; then
         sqlite3 "$DB" "$CMD"
