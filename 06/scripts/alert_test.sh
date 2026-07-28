@@ -99,7 +99,7 @@ echo "=== Testing sensor $SENSOR_ID ($TYPE, $NAME) on $NODE ==="
 if [[ "$MODE" == "--sensor" && "$VALUE" == "--rm_data" ]]; then
     echo "[ALERT] rm_data"
 
-    CMD="DELETE FROM sensors WHERE sensor_id='$SENSOR_ID';"
+    CMD="DELETE FROM sensor_readings WHERE sensor_id='$SENSOR_ID';"
 
     if [[ "$NODE" == "master" ]]; then
         sqlite3 "$DB" "$CMD"
@@ -107,7 +107,7 @@ if [[ "$MODE" == "--sensor" && "$VALUE" == "--rm_data" ]]; then
         ssh "$USERNAME@$IP" "sqlite3 $DB \"$CMD\""
     fi
 
-    echo "Sensor $SENSOR_ID removed from $NODE DB"
+    echo "Sensor $SENSOR_ID readings removed from $NODE DB"
     exit 0
 fi
 
@@ -119,12 +119,17 @@ if [[ "$MODE" == "--sensor" ]]; then
 
     echo "[INFO] inserting value $VALUE for sensor $SENSOR_ID"
 
+    CMD2="INSERT OR IGNORE INTO sensors(sensor_id,type,name)
+          VALUES('$SENSOR_ID','$TYPE','$NAME');"
+
     CMD="INSERT INTO sensor_readings(sensor_id,value,recorded_at)
          VALUES('$SENSOR_ID','$VALUE',datetime('now'));"
 
     if [[ "$NODE" == "master" ]]; then
+        sqlite3 "$DB" "$CMD2"
         sqlite3 "$DB" "$CMD"
     else
+        ssh "$USERNAME@$IP" "sqlite3 $DB \"$CMD2\""
         ssh "$USERNAME@$IP" "sqlite3 $DB \"$CMD\""
     fi
 
