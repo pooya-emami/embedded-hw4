@@ -215,7 +215,7 @@ void resolve_alert(const Sensor &s, const std::string &alert_type) {
 void check_sensor(const Sensor &s) {
     std::string json = get_sensor_value(s.type, s.id);
 
-    if (json.empty()) {
+    if (json.empty() || json.find("\"error\"") != std::string::npos) {
         raise_alert(s, "no_data", "none");
         return;
     }
