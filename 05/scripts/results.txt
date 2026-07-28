@@ -5,7 +5,16 @@
   "sensor_name": "temperature",
   "sensor_id": "101",
   "date": "2026-06-01",
-  "values": []
+  "values": [
+    {
+      "time": "10:00:00",
+      "value": "24.2"
+    },
+    {
+      "time": "10:15:00",
+      "value": "24.8"
+    }
+  ]
 }
 
 [Test 2] Sensor 201 on 2026-06-01 (should come from slave1)
@@ -66,10 +75,10 @@
   "sensor_id": "101",
   "sensor_type": "temperature",
   "sensor_name": "Floor1_Room101_Temp",
-  "value": "25",
+  "value": "24.8",
   "unit": "C",
-  "recorded_at": "2026-07-28 14:08:49",
-  "response_time_ms": 1.2736,
+  "recorded_at": "2026-06-01 10:15:00",
+  "response_time_ms": 1.10996,
   "source": "master_database"
 }
   /history:
@@ -77,7 +86,16 @@
   "sensor_name": "temperature",
   "sensor_id": "101",
   "date": "2026-06-01",
-  "values": []
+  "values": [
+    {
+      "time": "10:00:00",
+      "value": "24.2"
+    },
+    {
+      "time": "10:15:00",
+      "value": "24.8"
+    }
+  ]
 }
 
 === Tests Complete ===
