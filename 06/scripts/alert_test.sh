@@ -119,8 +119,24 @@ if [[ "$MODE" == "--sensor" ]]; then
 
     echo "[INFO] inserting value $VALUE for sensor $SENSOR_ID"
 
-    CMD2="INSERT OR IGNORE INTO sensors(sensor_id,type,name)
-          VALUES('$SENSOR_ID','$TYPE','$NAME');"
+    CMD2="INSERT OR IGNORE INTO sensors(
+              sensor_id,
+              sensor_type,
+              sensor_name,
+              location,
+              unit,
+              node_name,
+              is_active
+          )
+          VALUES(
+              '$SENSOR_ID',
+              '$TYPE',
+              '$NAME',
+              'unknown',
+              'unknown',
+              '$NODE',
+              1
+          );"
 
     CMD="INSERT INTO sensor_readings(sensor_id,value,recorded_at)
          VALUES('$SENSOR_ID','$VALUE',datetime('now'));"
