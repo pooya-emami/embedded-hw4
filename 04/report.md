@@ -205,7 +205,7 @@ The script successfully queries the SNMP agent and retrieves all available senso
 
 #### Top-Left Panel - Network Activity Monitoring 
 
-Similart to part 3 mongoose network connection.
+Similar to part 3 mongoose network connection.
 
 ---
 
