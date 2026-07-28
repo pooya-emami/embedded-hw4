@@ -1,15 +1,20 @@
 CC = g++
-CFLAGS = -Wall -Wextra -O2 -std=c++11
-LIBS = -lcurl -lsqlite3
+CFLAGS = -Wall -O2 -I.
+LDFLAGS = -lsqlite3 -lcurl
+
+SRCS = main.cpp
+OBJS = $(SRCS:.cpp=.o)
 
 TARGET = alert_daemon
 
 all: $(TARGET)
 
-$(TARGET): main.cpp
-	$(CC) $(CFLAGS) -o $(TARGET) main.cpp $(LIBS)
+$(TARGET): $(OBJS)
+	$(CC) $(OBJS) -o $(TARGET) $(LDFLAGS)
 
 clean:
-	rm -f $(TARGET)
+	rm -f $(OBJS) $(TARGET)
 
 .PHONY: all clean
+
+
