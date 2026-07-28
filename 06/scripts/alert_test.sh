@@ -119,33 +119,32 @@ if [[ "$MODE" == "--sensor" ]]; then
 
     echo "[INFO] inserting value $VALUE for sensor $SENSOR_ID"
 
-    CMD2="INSERT OR IGNORE INTO sensors(
-              sensor_id,
-              sensor_type,
-              sensor_name,
-              location,
-              unit,
-              node_name,
-              is_active
-          )
-          VALUES(
-              '$SENSOR_ID',
-              '$TYPE',
-              '$NAME',
-              'unknown',
-              'unknown',
-              '$NODE',
-              1
-          );"
+    CMD="
+        INSERT OR IGNORE INTO sensors(
+            sensor_id,
+            sensor_type,
+            sensor_name,
+            location,
+            unit,
+            node_name,
+            is_active
+        )
+        VALUES(
+            '$SENSOR_ID',
+            '$TYPE',
+            '$NAME',
+            'unknown',
+            'unknown',
+            '$NODE',
+            1
+        );
 
-    CMD="INSERT INTO sensor_readings(sensor_id,value,recorded_at)
-         VALUES('$SENSOR_ID','$VALUE',datetime('now'));"
+        INSERT INTO sensor_readings(sensor_id,value,recorded_at)
+        VALUES('$SENSOR_ID','$VALUE',datetime('now'));"
 
     if [[ "$NODE" == "master" ]]; then
-        sqlite3 "$DB" "$CMD2"
         sqlite3 "$DB" "$CMD"
     else
-        ssh "$USERNAME@$IP" "sqlite3 $DB \"$CMD2\""
         ssh "$USERNAME@$IP" "sqlite3 $DB \"$CMD\""
     fi
 
