@@ -1,86 +1,174 @@
 #!/bin/bash
+# alert_test.sh
 
-MASTER_DB="master.db"
-SLAVE1_DB="slave1.db"
-SLAVE2_DB="slave2.db"
+BASE="$HOME/HW4/05"
+CONFIG_FILE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../daemon/config.example"
 
-MASTER_IP=192.168.233.139
-SLAVE1_IP=192.168.233.140
-SLAVE2_IP=192.168.233.141
+declare -A SENSOR_TYPE
+declare -A SENSOR_NAME
+declare -A SENSOR_NODE
 
-USERNAME=pooya
+while IFS= read -r line; do
+    # USERNAME
+    if [[ "$line" == USERNAME=* ]]; then
+        USERNAME="${line#USERNAME=}"
+    fi
 
-BROKER_IP=127.0.0.1
-BROKER_PORT=1883
+    # IPs
+    if [[ "$line" == MASTER_IP=* ]]; then
+        MASTER_IP="${line#MASTER_IP=}"
+    fi
+    if [[ "$line" == SLAVE1_IP=* ]]; then
+        SLAVE1_IP="${line#SLAVE1_IP=}"
+    fi
+    if [[ "$line" == SLAVE2_IP=* ]]; then
+        SLAVE2_IP="${line#SLAVE2_IP=}"
+    fi
 
-echo "=== Triggering Alerts from MASTER NODE ==="
+    # Sensors
+    [[ "$line" != SENSOR=* ]] && continue
 
-# -----------------------------
-# TEMPERATURE HIGH (> TEMP_MAX)
-# -----------------------------
-echo "[ALERT] temperature_high"
-sqlite3 $MASTER_DB "UPDATE sensors SET value=45 WHERE id=101;"
-ssh $USERNAME@$SLAVE1_IP "sqlite3 $SLAVE1_DB \"UPDATE sensors SET value=45 WHERE id=101;\""
-ssh $USERNAME@$SLAVE2_IP "sqlite3 $SLAVE2_DB \"UPDATE sensors SET value=45 WHERE id=101;\""
+    entry="${line#SENSOR=}"
+    type=$(echo "$entry" | cut -d',' -f1)
+    id=$(echo "$entry" | cut -d',' -f2)
+    name=$(echo "$entry" | cut -d',' -f3)
 
-# -----------------------------
-# HUMIDITY LOW (< HUMIDITY_MIN)
-# -----------------------------
-echo "[ALERT] humidity_low"
-sqlite3 $MASTER_DB "UPDATE sensors SET value=10 WHERE id=102;"
-ssh $USERNAME@$SLAVE1_IP "sqlite3 $SLAVE1_DB \"UPDATE sensors SET value=10 WHERE id=102;\""
-ssh $USERNAME@$SLAVE2_IP "sqlite3 $SLAVE2_DB \"UPDATE sensors SET value=10 WHERE id=102;\""
+    SENSOR_TYPE[$id]="$type"
+    SENSOR_NAME[$id]="$name"
 
-# -----------------------------
-# HUMIDITY HIGH (> HUMIDITY_MAX)
-# -----------------------------
-echo "[ALERT] humidity_high"
-sqlite3 $MASTER_DB "UPDATE sensors SET value=90 WHERE id=102;"
-ssh $USERNAME@$SLAVE1_IP "sqlite3 $SLAVE1_DB \"UPDATE sensors SET value=90 WHERE id=102;\""
-ssh $USERNAME@$SLAVE2_IP "sqlite3 $SLAVE2_DB \"UPDATE sensors SET value=90 WHERE id=102;\""
+    if (( id >= 100 && id < 200 )); then
+        SENSOR_NODE[$id]="master"
+    elif (( id >= 200 && id < 300 )); then
+        SENSOR_NODE[$id]="slave1"
+    elif (( id >= 300 && id < 400 )); then
+        SENSOR_NODE[$id]="slave2"
+    fi
+done < "$CONFIG_FILE"
 
-# -----------------------------
-# CO2 HIGH (> CO2_MAX)
-# -----------------------------
-echo "[ALERT] co2_high"
-sqlite3 $MASTER_DB "UPDATE sensors SET value=1500 WHERE id=203;"
-ssh $USERNAME@$SLAVE1_IP "sqlite3 $SLAVE1_DB \"UPDATE sensors SET value=1500 WHERE id=203;\""
-ssh $USERNAME@$SLAVE2_IP "sqlite3 $SLAVE2_DB \"UPDATE sensors SET value=1500 WHERE id=203;\""
+NODE="$1"
+MODE="$2"
+SENSOR_ID="$3"
 
-# -----------------------------
-# SMOKE DETECTED (value == 1)
-# -----------------------------
-echo "[ALERT] smoke_detected"
-sqlite3 $MASTER_DB "UPDATE sensors SET value=1 WHERE id=304;"
-ssh $USERNAME@$SLAVE1_IP "sqlite3 $SLAVE1_DB \"UPDATE sensors SET value=1 WHERE id=304;\""
-ssh $USERNAME@$SLAVE2_IP "sqlite3 $SLAVE2_DB \"UPDATE sensors SET value=1 WHERE id=304;\""
+if [[ -z "$NODE" || -z "$MODE" || -z "$SENSOR_ID" ]]; then
+    echo "Usage:"
+    echo "  ./alert_test.sh master --sensor 101"
+    echo "  ./alert_test.sh slave1 --no_data 202"
+    echo "  ./alert_test.sh slave2 --invalid_data 304"
+    exit 1
+fi
 
-# -----------------------------
-# MOTION DETECTED (value == 1)
-# -----------------------------
-echo "[ALERT] motion_detected"
-sqlite3 $MASTER_DB "UPDATE sensors SET value=1 WHERE id=401;"
-ssh $USERNAME@$SLAVE1_IP "sqlite3 $SLAVE1_DB \"UPDATE sensors SET value=1 WHERE id=401;\""
-ssh $USERNAME@$SLAVE2_IP "sqlite3 $SLAVE2_DB \"UPDATE sensors SET value=1 WHERE id=401;\""
+TYPE="${SENSOR_TYPE[$SENSOR_ID]}"
+NAME="${SENSOR_NAME[$SENSOR_ID]}"
 
-# -----------------------------
-# NO DATA (delete sensor row)
-# -----------------------------
-echo "[ALERT] no_data"
-sqlite3 $MASTER_DB "DELETE FROM sensors WHERE id=101;"
-ssh $USERNAME@$SLAVE1_IP "sqlite3 $SLAVE1_DB \"DELETE FROM sensors WHERE id=101;\""
-ssh $USERNAME@$SLAVE2_IP "sqlite3 $SLAVE2_DB \"DELETE FROM sensors WHERE id=101;\""
+if [[ -z "$TYPE" ]]; then
+    echo "Unknown sensor ID: $SENSOR_ID"
+    exit 1
+fi
 
-# -----------------------------
-# MQTT TRIGGERS
-# -----------------------------
-echo "[MQTT] temperature_high"
-mosquitto_pub -h $BROKER_IP -p $BROKER_PORT -t "sensor/temperature/101" -m '{"value": 36.5}'
+case "$NODE" in
+    master)
+        DB="$BASE/master/$MASTER_DB"
+        IP="$MASTER_IP"
+        ;;
+    slave1)
+        DB="$BASE/slave/$SLAVE1_DB"
+        IP="$SLAVE1_IP"
+        ;;
+    slave2)
+        DB="$BASE/slave/$SLAVE2_DB"
+        IP="$SLAVE2_IP"
+        ;;
+    *)
+        echo "Invalid node: $NODE"
+        exit 1
+        ;;
+esac
 
-echo "[MQTT] smoke_detected"
-mosquitto_pub -h $BROKER_IP -p $BROKER_PORT -t "sensor/smoke/304" -m '{"value": 1}'
+echo "=== Testing sensor $SENSOR_ID ($TYPE, $NAME) on $NODE ==="
 
-echo "[MQTT] invalid_value"
-mosquitto_pub -h $BROKER_IP -p $BROKER_PORT -t "sensor/temperature/101" -m '{"value": "abc"}'
+if [[ "$MODE" == "--no_data" ]]; then
+    echo "[ALERT] no_data"
+
+    CMD="DELETE FROM sensors WHERE sensor_id='$SENSOR_ID';"
+
+    if [[ "$NODE" == "master" ]]; then
+        sqlite3 "$DB" "$CMD"
+    else
+        ssh "$USERNAME@$IP" "sqlite3 $DB \"$CMD\""
+    fi
+
+    echo "Sensor $SENSOR_ID deleted from $NODE DB"
+    exit 0
+fi
+
+if [[ "$MODE" == "--invalid_data" ]]; then
+    echo "[ALERT] invalid_data"
+
+    CMD="INSERT INTO sensor_readings(sensor_id,value,recorded_at)
+         VALUES('$SENSOR_ID','abc',datetime('now'));"
+
+    if [[ "$NODE" == "master" ]]; then
+        sqlite3 "$DB" "$CMD"
+    else
+        ssh "$USERNAME@$IP" "sqlite3 $DB \"$CMD\""
+    fi
+
+    echo "Inserted invalid value 'abc' for sensor $SENSOR_ID on $NODE"
+    exit 0
+fi
+
+case "$TYPE" in
+    temperature)
+        VALUE=45
+        ALERT="temperature_high"
+        ;;
+    humidity)
+        echo "[ALERT] humidity_low"
+        CMD_LOW="INSERT INTO sensor_readings(sensor_id,value,recorded_at)
+                 VALUES('$SENSOR_ID',10,datetime('now'));"
+
+        if [[ "$NODE" == "master" ]]; then
+            sqlite3 "$DB" "$CMD_LOW"
+        else
+            ssh "$USERNAME@$IP" "sqlite3 $DB \"$CMD_LOW\""
+        fi
+
+        echo "[ALERT] humidity_high"
+        CMD_HIGH="INSERT INTO sensor_readings(sensor_id,value,recorded_at)
+                  VALUES('$SENSOR_ID',90,datetime('now'));"
+
+        if [[ "$NODE" == "master" ]]; then
+            sqlite3 "$DB" "$CMD_HIGH"
+        else
+            ssh "$USERNAME@$IP" "sqlite3 $DB \"$CMD_HIGH\""
+        fi
+
+        echo "=== DONE ==="
+        exit 0
+        ;;
+    co2)
+        VALUE=1500
+        ALERT="co2_high"
+        ;;
+    smoke)
+        VALUE=1
+        ALERT="smoke_detected"
+        ;;
+    motion)
+        VALUE=1
+        ALERT="motion_detected"
+        ;;
+esac
+
+echo "[ALERT] $ALERT"
+
+CMD="INSERT INTO sensor_readings(sensor_id,value,recorded_at)
+     VALUES('$SENSOR_ID',$VALUE,datetime('now'));"
+
+if [[ "$NODE" == "master" ]]; then
+    sqlite3 "$DB" "$CMD"
+else
+    ssh "$USERNAME@$IP" "sqlite3 $DB \"$CMD\""
+fi
 
 echo "=== DONE ==="

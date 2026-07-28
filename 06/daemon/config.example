@@ -1,7 +1,19 @@
-# Alert Daemon Configuration
+# System Info
+USERNAME="pooya"
+
 MASTER_IP=192.168.233.139
 MASTER_PORT=8080
+MASTER_DB=master.db
+
+SLAVE1_IP=192.168.233.140
+SLAVE1_DB=slave1.db
+
+SLAVE2_IP=192.168.233.141
+SLAVE2_DB=slave2.db
+
+# Alert Daemon Configuration
 CHECK_INTERVAL_SECONDS=30
+ALERT_DB=alerts.db
 
 # Alert Thresholds
 TEMP_MAX=35.0

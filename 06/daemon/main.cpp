@@ -20,11 +20,13 @@ struct Config {
     std::string master_ip = "127.0.0.1";
     int master_port = 8080;
     int check_interval_seconds = 30;
+    std::string alert_db_path = "alerts.db";
 
     double temp_max = 35.0;
     double humidity_min = 20.0;
     double humidity_max = 80.0;
     double co2_max = 1000.0;
+
 
     std::vector<Sensor> sensors;
 };
@@ -51,6 +53,7 @@ void load_config(const std::string &filename) {
             if (key == "MASTER_IP") cfg.master_ip = value;
             else if (key == "MASTER_PORT") cfg.master_port = std::stoi(value);
             else if (key == "CHECK_INTERVAL_SECONDS") cfg.check_interval_seconds = std::stoi(value);
+            else if (key == "ALERT_DB") cfg.alert_db_path = value;
             else if (key == "TEMP_MAX") cfg.temp_max = std::stod(value);
             else if (key == "HUMIDITY_MIN") cfg.humidity_min = std::stod(value);
             else if (key == "HUMIDITY_MAX") cfg.humidity_max = std::stod(value);
@@ -161,8 +164,18 @@ std::unordered_set<std::string> active_alerts;
 
 void raise_alert(const Sensor &s, const std::string &alert_type, const std::string &value) {
     std::string key = s.id + "_" + alert_type;
-    if (active_alerts.count(key)) return;
 
+    // If already active, just log again (journalctl repeat)
+    if (active_alerts.count(key)) {
+        std::cout << "[ALERT] " << alert_type
+                  << " | Sensor " << s.id
+                  << " (" << s.name << ")"
+                  << " | Value: " << value
+                  << " | Time: " << now() << "\n";
+        return;
+    }
+
+    // First time: mark active + store in DB
     active_alerts.insert(key);
 
     std::cout << "[ALERT] " << alert_type
@@ -174,6 +187,31 @@ void raise_alert(const Sensor &s, const std::string &alert_type, const std::stri
     store_alert(s, alert_type, value);
 }
 
+void resolve_alert(const Sensor &s, const std::string &alert_type) {
+    std::string key = s.id + "_" + alert_type;
+
+    if (!active_alerts.count(key)) return;
+
+    active_alerts.erase(key);
+
+    std::string sql =
+        "UPDATE alerts SET status='resolved' "
+        "WHERE sensor_id='" + s.id + "' "
+        "AND alert_type='" + alert_type + "' "
+        "AND status='active';";
+
+    char *err = nullptr;
+    if (sqlite3_exec(alert_db, sql.c_str(), nullptr, nullptr, &err) != SQLITE_OK) {
+        std::cerr << "Error resolving alert: " << err << "\n";
+        sqlite3_free(err);
+    }
+
+    std::cout << "[RESOLVED] " << alert_type
+              << " | Sensor " << s.id
+              << " (" << s.name << ")"
+              << " | Time: " << now() << "\n";
+}
+
 void check_sensor(const Sensor &s) {
     std::string json = get_sensor_value(s.type, s.id);
 
@@ -181,30 +219,59 @@ void check_sensor(const Sensor &s) {
         raise_alert(s, "no_data", "none");
         return;
     }
+    resolve_alert(s, "no_data");
 
     std::string value_str = extract_json_field(json, "value");
     if (value_str.empty()) return;
 
-    double value = std::stod(value_str);
+    double value;
+    try {
+        value = std::stod(value_str);
+     } catch (...) {
+        raise_alert(s, "invalid_data", value_str);
+        return;
+    }
+    resolve_alert(s, "invalid_data");
 
-    if (s.type == "temperature" && value > cfg.temp_max)
-        raise_alert(s, "temperature_high", value_str);
+    if (s.type == "temperature") {
+        if (value > cfg.temp_max)
+            raise_alert(s, "temperature_high", value_str);
+        else
+            resolve_alert(s, "temperature_high");
+    }
 
     if (s.type == "humidity") {
         if (value < cfg.humidity_min)
             raise_alert(s, "humidity_low", value_str);
-        else if (value > cfg.humidity_max)
+        else
+            resolve_alert(s, "humidity_low");
+
+        if (value > cfg.humidity_max)
             raise_alert(s, "humidity_high", value_str);
+        else
+            resolve_alert(s, "humidity_high");
     }
 
-    if (s.type == "co2" && value > cfg.co2_max)
-        raise_alert(s, "co2_high", value_str);
+    if (s.type == "co2") {
+        if (value > cfg.co2_max)
+            raise_alert(s, "co2_high", value_str);
+        else
+            resolve_alert(s, "co2_high");
+    }
 
-    if (s.type == "smoke" && value == 1)
-        raise_alert(s, "smoke_detected", value_str);
+    if (s.type == "smoke") {
+        if (value == 1)
+            raise_alert(s, "smoke_detected", value_str);
+        else
+            resolve_alert(s, "smoke_detected");
+    }
 
-    if (s.type == "motion" && value == 1)
-        raise_alert(s, "motion_detected", value_str);
+    if (s.type == "motion") {
+        if (value == 1)
+            raise_alert(s, "motion_detected", value_str);
+        else
+            resolve_alert(s, "motion_detected");
+    }
 }
 
 int main(int argc, char **argv) {
@@ -212,7 +279,7 @@ int main(int argc, char **argv) {
 
     load_config(argc > 1 ? argv[1] : "config.example");
 
-    if (!init_alert_db("alerts.db")) {
+    if (!init_alert_db(cfg.alert_db_path)) {
         std::cerr << "Failed to initialize alert DB.\n";
         return 1;
     }
