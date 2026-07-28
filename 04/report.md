@@ -158,9 +158,9 @@ The following figure shows a comprehensive test session for the SNMP integration
 
 ### 3.2 Test Scenarios and Validation
 
-The test session validates three critical aspects of the SNMP integration:
+The test session validates the results the SNMP integration:
 
-#### Scenario 1: SNMP Setup and Service Startup (Bottom-Right Panel)
+#### Bottom-Right Panel - SNMP Setup and Service Startup 
 
 **Command:** `./Setup_snmp.sh --run`
 
@@ -178,7 +178,7 @@ The test session validates three critical aspects of the SNMP integration:
 - All configuration paths and parameters are correctly set
 - No error messages during startup
 
-#### Scenario 2: SNMP Data Retrieval (Bottom-Left Panel)
+#### Left Panel - SNMP Data Retrieval 
 
 **Command:** `./read_all_sensors.sh`
 
@@ -203,15 +203,9 @@ The script successfully queries the SNMP agent and retrieves all available senso
 - Multiple sensors retrieved: Floor1, Floor2, Floor3 sensors
 - All fields available: name, type, value, unit, timestamp
 
-#### Scenario 3: Network Activity Monitoring (Top-Left Panel)
+#### Top-Left Panel - Network Activity Monitoring 
 
-The top-left panel shows `ss` (socket statistics) output displaying active network connections:
-
-**Key Observations:**
-- Many `ESTAB` (established) and `CLOSE-WAIT` connections visible
-- These represent network sockets opened by the SNMP manager
-- Connections show active data fetching from the SNMP agent
-- Port 1161 appears in connection list (SNMP agent port)
+Similart to part 3 mongoose network connection.
 
 ---
 

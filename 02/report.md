@@ -273,10 +273,11 @@ The screenshot above demonstrates the successful verification of the system's op
 - The script successfully completes with performance statistics
 
 **Left Panel - Network Traffic Monitoring:**
-- The `ss` (Socket Statistics) tool shows real-time active network connections
-- Multiple connections to/from local network IPs showing active communication
-- `ESTAB` (Established) states indicate active connections between nodes
-- `Recv-Q` and `Send-Q` values are mostly 0, indicating smooth traffic flow with no backlog
+- The Master server (running on port 8080) is actively handling HTTP requests from clients
+- Active connections show the Master processing incoming sensor queries and forwarding requests to Slave nodes
+- The Mongoose networking library manages the HTTP connections, with `accept_conn` handling new client connections, `read_conn` processing incoming request data, and `write_conn` sending responses back to clients
+- `mg_close_conn` ensures proper cleanup of completed connections, maintaining efficient resource utilization
+- The network activity correlates directly with the benchmark tests being executed, showing real-time request/response patterns
 
 This verification confirms that the system is operational and handling network traffic properly, ready for the benchmark tests.
 

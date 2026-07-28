@@ -235,22 +235,21 @@ The following figure shows a comprehensive test session for the MQTT integration
 
 ### 4.2 Test Scenarios and Validation
 
-The test session validates three critical aspects of the MQTT integration:
+The test session validates the results of the MQTT integration:
 
-#### Scenario 1: Service Status Verification (Right Panel)
+#### Right Panel - Service Status Verification
 - **Action:** `sudo systemctl status mosquitto` confirms the MQTT broker is active and running
 - **Status:** `Active: active (running)` since 10:07:27 UTC
 - **Uptime:** 3 minutes (indicating benchmark completed quickly)
-- **Memory Usage:** 2.5M (minimal resource consumption)
 - **Logs:** Clean startup with no error messages
 
-#### Scenario 2: Benchmark Execution (Right Panel)
+#### Right Panel - Benchmark Execution
 - **Action:** `./mqtt_benchmark.sh > results.txt`
 - **Purpose:** Execute performance benchmark and redirect output to file
 - **Result:** Benchmark completed successfully, returning to command prompt
 - **Output:** Results saved to `results.txt` for analysis
 
-#### Scenario 3: Real‑Time Data Stream (Left Panel)
+#### Left Panel - Real‑Time Data Stream
 The left panel shows processed JSON data from MQTT message traffic:
 
 **Sensor Data Examples:**

@@ -115,7 +115,7 @@ The test session demonstrates the full lifecycle of incident response across mul
 - Threat condition resolved
 - Logs: `[RESOLVED] temperature_high | Sensor 101 (Floor1_Room101_Temp) | Time: 2026-07-29 18:37:26`
 
-**Status:** ✅ PASS - Alert correctly raised and resolved
+**Status:** Alert correctly raised and resolved
 
 #### Scenario 2: Motion Detection Alert & Resolution
 
@@ -127,7 +127,7 @@ The test session demonstrates the full lifecycle of incident response across mul
 - Sensor value returns to 0 (motion cleared)
 - System logs: `[RESOLVED] motion_detected | Sensor 103 (Floor1_Corridor_Motion)`
 
-**Status:** ✅ PASS - Alert correctly raised and resolved
+**Status:** Alert correctly raised and resolved
 
 #### Scenario 3: Smoke Invalid Data Alert & Resolution
 
@@ -140,9 +140,9 @@ The test session demonstrates the full lifecycle of incident response across mul
 - System reads a clean value of `0` (valid numeric)
 - Resolves: `[RESOLVED] invalid_data | Sensor 304 (Floor3_Storage_Smoke)`
 
-**Status:** ✅ PASS - Invalid data correctly detected and resolved
+**Status:** Invalid data correctly detected and resolved
 
-#### Scenario 4: Automated Monitoring Cycle
+#### Automated Monitoring Cycle
 
 **Observations from both figures:**
 - After every check cycle: `Check complete. Sleeping 30 seconds...`
@@ -156,9 +156,9 @@ The test session demonstrates the full lifecycle of incident response across mul
 
 | Alert Type | Sensor | Trigger Value | Resolution Value | Status |
 |------------|--------|---------------|------------------|--------|
-| temperature_high | 101 (Floor1_Room101_Temp) | 45°C | 10°C | ✅ PASS |
-| motion_detected | 103 (Floor1_Corridor_Motion) | 1 | 0 | ✅ PASS |
-| invalid_data | 304 (Floor3_Storage_Smoke) | "abc" | 0 | ✅ PASS |
+| temperature_high | 101 (Floor1_Room101_Temp) | 45°C | 10°C | PASS |
+| motion_detected | 103 (Floor1_Corridor_Motion) | 1 | 0 | PASS |
+| invalid_data | 304 (Floor3_Storage_Smoke) | "abc" | 0 | PASS |
 
 ---
 
