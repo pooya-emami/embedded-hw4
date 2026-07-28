@@ -1,0 +1,83 @@
+=== Part 5: History API Tests ===
+
+[Test 1] Sensor 101 on 2026-06-01
+{
+  "sensor_name": "temperature",
+  "sensor_id": "101",
+  "date": "2026-06-01",
+  "values": []
+}
+
+[Test 2] Sensor 201 on 2026-06-01 (should come from slave1)
+{
+  "sensor_name": "temperature",
+  "sensor_id": "201",
+  "date": "2026-06-01",
+  "values": [
+    {
+      "time": "10:00:00",
+      "value": "25.0"
+    },
+    {
+      "time": "10:15:00",
+      "value": "25.3"
+    }
+  ]
+}
+
+[Test 3] Sensor 301 on 2026-06-01 (should come from slave2)
+{
+  "sensor_name": "temperature",
+  "sensor_id": "301",
+  "date": "2026-06-01",
+  "values": [
+    {
+      "time": "10:00:00",
+      "value": "22.9"
+    },
+    {
+      "time": "10:15:00",
+      "value": "23.1"
+    }
+  ]
+}
+
+[Test 4] Sensor 101 on 2026-06-02 (no data - should return empty values)
+{
+  "sensor_name": "temperature",
+  "sensor_id": "101",
+  "date": "2026-06-02",
+  "values": []
+}
+
+[Test 5] Missing sensor_id (should return 400 error)
+{
+  "error": "Missing parameters: sensor_type, sensor_id, date"
+}
+
+[Test 6] Invalid date format (should return 400 error)
+{
+  "error": "Invalid date format. Use YYYY-MM-DD"
+}
+
+[Test 7] Compare /query (latest) vs /history
+  /query:
+{
+  "sensor_id": "101",
+  "sensor_type": "temperature",
+  "sensor_name": "Floor1_Room101_Temp",
+  "value": "25",
+  "unit": "C",
+  "recorded_at": "2026-07-28 14:08:49",
+  "response_time_ms": 1.2736,
+  "source": "master_database"
+}
+  /history:
+{
+  "sensor_name": "temperature",
+  "sensor_id": "101",
+  "date": "2026-06-01",
+  "values": []
+}
+
+=== Tests Complete ===
