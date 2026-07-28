@@ -1,32 +1,32 @@
 ========== ROUND 1: COLD CACHE ==========
-  temperature id=101    client= 148 ms  server=43.609 ms  source=master_database
-  humidity id=102    client=  20 ms  server=1.68154 ms  source=master_database
-  motion   id=103    client=  73 ms  server=3.16831 ms  source=master_database
-  temperature id=104    client=  27 ms  server=2.66793 ms  source=master_database
-  temperature id=201    client= 130 ms  server=101.907 ms  source=slave_database
-  humidity id=202    client=  70 ms  server=36.7657 ms  source=slave_database
-  motion   id=203    client=  26 ms  server=5.59604 ms  source=slave_database
-  co2      id=204    client=  32 ms  server=7.61814 ms  source=slave_database
-  temperature id=301    client= 187 ms  server=153.595 ms  source=slave_database
-  humidity id=302    client=  41 ms  server=18.9941 ms  source=slave_database
-  motion   id=303    client=  60 ms  server=38.7302 ms  source=slave_database
-  smoke    id=304    client=  50 ms  server=15.1434 ms  source=slave_database
+  temperature id=101    client= 214 ms  server=57.597 ms  source=master_database
+  humidity id=102    client=  82 ms  server=5.38303 ms  source=master_database
+  motion   id=103    client=  31 ms  server=1.57725 ms  source=master_database
+  temperature id=104    client= 102 ms  server=5.47699 ms  source=master_database
+  temperature id=201    client= 151 ms  server=116.575 ms  source=slave_database
+  humidity id=202    client=  86 ms  server=16.086 ms  source=slave_database
+  motion   id=203    client=  49 ms  server=17.2158 ms  source=slave_database
+  co2      id=204    client=  96 ms  server=18.6339 ms  source=slave_database
+  temperature id=301    client= 194 ms  server=150.321 ms  source=slave_database
+  humidity id=302    client=  92 ms  server=55.6217 ms  source=slave_database
+  motion   id=303    client=  61 ms  server=21.5405 ms  source=slave_database
+  smoke    id=304    client=  45 ms  server=14.1796 ms  source=slave_database
 
-Client avg: 72 ms
-Server avg: 35.79 ms
+Client avg: 100 ms
+Server avg: 40.02 ms
 ========== ROUND 2: WARM CACHE ==========
-  temperature id=101    client=  30 ms  server=2.03647 ms  source=master_cache
-  humidity id=102    client=  27 ms  server=0.744698 ms  source=master_cache
-  motion   id=103    client=  38 ms  server=1.75463 ms  source=master_cache
-  temperature id=104    client=  38 ms  server=1.66613 ms  source=master_cache
-  temperature id=201    client=  25 ms  server=1.96018 ms  source=master_cache
-  humidity id=202    client=  35 ms  server=1.46566 ms  source=master_cache
-  motion   id=203    client=  30 ms  server=0.696718 ms  source=master_cache
-  co2      id=204    client=  42 ms  server=1.91636 ms  source=master_cache
-  temperature id=301    client=  44 ms  server=3.58643 ms  source=master_cache
-  humidity id=302    client=  19 ms  server=0.307427 ms  source=master_cache
-  motion   id=303    client=  47 ms  server=1.18603 ms  source=master_cache
-  smoke    id=304    client=  29 ms  server=1.05289 ms  source=master_cache
+  temperature id=101    client=  39 ms  server=1.08898 ms  source=master_cache
+  humidity id=102    client=  51 ms  server=1.71981 ms  source=master_cache
+  motion   id=103    client=  18 ms  server=0.675073 ms  source=master_cache
+  temperature id=104    client=  52 ms  server=1.76291 ms  source=master_cache
+  temperature id=201    client=  79 ms  server=0.973018 ms  source=master_cache
+  humidity id=202    client=  52 ms  server=0.832945 ms  source=master_cache
+  motion   id=203    client=  51 ms  server=0.768469 ms  source=master_cache
+  co2      id=204    client=  54 ms  server=0.702621 ms  source=master_cache
+  temperature id=301    client=  41 ms  server=0.912339 ms  source=master_cache
+  humidity id=302    client=  41 ms  server=1.27785 ms  source=master_cache
+  motion   id=303    client=  57 ms  server=2.57713 ms  source=master_cache
+  smoke    id=304    client=  53 ms  server=5.23137 ms  source=master_cache
 
-Client avg: 33 ms
-Server avg: 1.53 ms
+Client avg: 49 ms
+Server avg: 1.54 ms
