@@ -1,0 +1,310 @@
+# Part 1: Distributed Database System - README
+
+## Project Overview
+This is the base implementation of a distributed database system for sensor data management in a hotel. The system consists of one Master node and two Slave nodes, each maintaining local SQLite databases with sensor readings.
+
+## System Architecture
+
+### Network Diagram
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        Network                              │
+│                    (LAN / Virtual)                          │
+│                                                             │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐    │
+│  │   Master     │  │   Slave 1    │  │   Slave 2    │    │
+│  │   Node       │  │   Node       │  │   Node       │    │
+│  │              │  │              │  │              │    │
+│  │ IP: dynamic  │  │ IP: dynamic  │  │ IP: dynamic  │    │
+│  │ Port: dynamic│  │ Port: dynamic│  │ Port: dynamic│    │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘    │
+│         │                 │                  │             │
+│         └─────────────────┴──────────────────┘             │
+│                     Master-Slave                            │
+│                     Communication                           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Request Flow
+1. **Operator** → Master Node (HTTP Request)
+2. **Master Node** → Local SQLite (Check if data exists)
+3. **If NOT found**: Master → Slave 1 (Forward request)
+4. **If NOT found**: Slave 1 → Slave 2 (Forward request)
+5. **If found**: Response propagates back: Slave N → ... → Slave 1 → Master → Operator
+6. **If NOT found anywhere**: Master returns "Data not found" message
+
+## Prerequisites
+
+### System Requirements
+- Ubuntu 22.04 (or compatible)
+- GCC/G++ compiler
+- SQLite3
+- curl (for testing)
+
+### Installation
+
+1. **Update package list and install dependencies:**
+```bash
+sudo apt update
+sudo apt install -y sqlite3 libsqlite3-dev build-essential
+sudo apt-get install -y jq
+```
+
+2. **Install Mongoose Library:**
+```bash
+# Create directory for Mongoose
+mkdir -p /mongoose
+cd /mongoose
+
+# Download Mongoose source files
+wget https://raw.githubusercontent.com/cesanta/mongoose/master/mongoose.c
+wget https://raw.githubusercontent.com/cesanta/mongoose/master/mongoose.h
+
+# Compile as shared library
+gcc -O2 -fPIC -c mongoose.c -o mongoose.o
+gcc -shared -o libmongoose.so mongoose.o
+
+# Install system-wide
+sudo cp libmongoose.so /usr/local/lib/
+sudo ldconfig
+sudo cp mongoose.h /usr/local/include/
+```
+
+## Project Structure
+```
+01/
+├── master/
+│   ├── main.c
+│   ├── Makefile
+│   ├── master_init_db.sh
+│   └── config.example
+├── slave/
+│   ├── main.c
+│   ├── Makefile
+│   ├── slave_init_db.sh
+│   └── config.example
+├── scripts/
+│   ├── build_and_run.sh
+│   └── test_requests.sh
+├── report.md
+└── README.md
+```
+
+## Database Structure
+
+### Sensors Table
+```sql
+CREATE TABLE sensors (
+    id INTEGER PRIMARY KEY,
+    sensor_id TEXT NOT NULL,
+    sensor_type TEXT NOT NULL,
+    value TEXT NOT NULL,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+The database stores sensor readings with the following fields:
+- **id**: Unique record identifier
+- **sensor_id**: Unique identifier for each sensor (e.g., 101, 102)
+- **sensor_type**: Type of sensor (temperature, humidity, motion, etc.)
+- **value**: Latest reading value
+- **timestamp**: Time when reading was recorded
+
+### Initial Data Files
+The initialization scripts use provided CSV/JSON data files to populate the databases with initial sensor readings. Each node receives its own subset of sensor data.
+
+## Compilation and Build
+
+### Building All Components
+```bash
+# Navigate to part 1 directory
+cd 01/
+
+# Build and run all nodes
+./scripts/build_and_run.sh master
+./scripts/build_and_run.sh slave1
+./scripts/build_and_run.sh slave2
+```
+
+### Build with Database Initialization
+```bash
+# Build nodes and initialize databases
+./scripts/build_and_run.sh master --dbgen
+./scripts/build_and_run.sh slave1 --dbgen
+./scripts/build_and_run.sh slave2 --dbgen
+```
+
+### Manual Build
+```bash
+# Build master
+cd master
+make clean
+make
+./master --config config.example
+
+# Build slave
+cd ../slave
+make clean
+make
+./slave --config config.example
+```
+
+## Configuration
+
+### Configuration File Format (config.example)
+```
+{
+    "port": 8080,
+    "db_path": "sensors.db",
+    "master_host": "192.168.1.100",
+    "master_port": 8080,
+    "slaves": [
+        {"host": "192.168.1.101", "port": 8081},
+        {"host": "192.168.1.102", "port": 8082}
+    ]
+}
+```
+
+### Configuration Parameters
+- **port**: Server listening port
+- **db_path**: Path to SQLite database file
+- **master_host**: Master node IP address (for slaves)
+- **master_port**: Master node port (for slaves)
+- **slaves**: List of slave nodes with host and port
+
+## Running the System
+
+### Start Master Node
+```bash
+cd master
+./master --config config.example
+```
+
+### Start Slave Nodes
+```bash
+cd slave
+./slave --config config.example
+```
+
+### Using Build Script
+```bash
+# Build and run with config file
+./scripts/build_and_run.sh master config.example
+./scripts/build_and_run.sh slave1 config.example
+./scripts/build_and_run.sh slave2 config.example
+```
+
+## Testing the System
+
+### Automated Testing
+```bash
+# Run all test requests
+./scripts/test_requests.sh
+```
+
+### Manual Testing with curl
+
+**Query for specific sensor:**
+```bash
+# Query temperature sensor with ID 101
+curl -s "http://master_ip:8080/query?sensor_type=temperature&sensor_id=101" | jq '.'
+
+# Query humidity sensor with ID 302
+curl -s "http://master_ip:8080/query?sensor_type=humidity&sensor_id=302" | jq '.'
+
+# Query non-existent sensor
+curl -s "http://master_ip:8080/query?sensor_type=temperature&sensor_id=999" | jq '.'
+```
+
+### Expected Response Format
+
+**Success Response:**
+```json
+{
+    "sensor_type": "temperature",
+    "sensor_id": "101",
+    "value": "24.8",
+    "timestamp": "2026-06-01 10:15:00",
+    "source": "master"
+}
+```
+
+**Not Found Response:**
+```json
+{
+    "error": "Data not found",
+    "sensor_type": "temperature",
+    "sensor_id": "101"
+}
+```
+
+## Bonus Implementation
+
+### Single IP with Multiple Ports
+The bonus implementation uses port forwarding to manage multiple nodes on a single IP.
+
+**Setup:**
+```bash
+# Install socat
+sudo apt install -y socat
+
+# Port forwarding
+socat TCP-LISTEN:9081,fork,reuseaddr TCP:slave1_ip:8081 &
+socat TCP-LISTEN:9082,fork,reuseaddr TCP:slave2_ip:8082 &
+
+# Run master with bonus config
+./scripts/build_and_run.sh master config.bonus
+
+# Stop socat when done
+pkill socat
+```
+
+## Security Considerations
+
+### Current Security Measures
+- Basic error handling to prevent information disclosure
+- Configuration-based IP and port management
+
+### Security Improvements (Suggested)
+1. **HTTPS Implementation**: Use TLS/SSL for encrypted communication
+2. **Authentication**: Implement API key or JWT authentication
+3. **Input Validation**: Sanitize all inputs to prevent SQL injection
+4. **Rate Limiting**: Prevent DoS attacks
+5. **Firewall Configuration**: Restrict access to authorized IPs
+6. **Logging**: Implement comprehensive audit logging
+7. **Data Encryption**: Encrypt sensitive data at rest
+8. **Backup Strategy**: Regular database backups
+
+## Troubleshooting
+
+### Common Issues
+
+**1. Port already in use**
+```bash
+# Find process using port
+sudo lsof -i :8080
+# Kill process
+sudo kill -9 <PID>
+```
+
+**2. Database initialization fails**
+```bash
+# Check if data files exist
+ls -la data/
+# Run init script with debug
+bash -x master_init_db.sh
+```
+
+**3. Connection refused**
+```bash
+# Verify nodes are running
+ps aux | grep master
+ps aux | grep slave
+# Check network connectivity
+ping slave1_ip
+```
+
+## References
+- [Mongoose Library Documentation](https://mongoose.ws/documentation/)
+- [SQLite Documentation](https://www.sqlite.org/docs.html)
+- [curl Documentation](https://curl.se/docs/)
