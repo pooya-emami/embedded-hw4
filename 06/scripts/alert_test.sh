@@ -119,8 +119,7 @@ if [[ "$MODE" == "--sensor" ]]; then
 
     echo "[INFO] inserting value $VALUE for sensor $SENSOR_ID"
 
-    CMD="
-        INSERT OR IGNORE INTO sensors(
+    CMD="INSERT OR IGNORE INTO sensors(
             sensor_id,
             sensor_type,
             sensor_name,
