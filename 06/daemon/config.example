@@ -39,3 +39,4 @@ SENSOR=temperature,301,Floor3_Room301_Temp
 SENSOR=humidity,302,Floor3_Room301_Humidity
 SENSOR=motion,303,Floor3_Corridor_Motion
 SENSOR=smoke,304,Floor3_Storage_Smoke
+
