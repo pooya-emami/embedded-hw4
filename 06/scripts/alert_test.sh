@@ -25,6 +25,17 @@ while IFS= read -r line; do
         SLAVE2_IP="${line#SLAVE2_IP=}"
     fi
 
+    # DB filenames
+    if [[ "$line" == MASTER_DB=* ]]; then
+        MASTER_DB="${line#MASTER_DB=}"
+    fi
+    if [[ "$line" == SLAVE1_DB=* ]]; then
+        SLAVE1_DB="${line#SLAVE1_DB=}"
+    fi
+    if [[ "$line" == SLAVE2_DB=* ]]; then
+        SLAVE2_DB="${line#SLAVE2_DB=}"
+    fi
+
     # Sensors
     [[ "$line" != SENSOR=* ]] && continue
 
@@ -45,15 +56,18 @@ while IFS= read -r line; do
     fi
 done < "$CONFIG_FILE"
 
+
 NODE="$1"
 MODE="$2"
 SENSOR_ID="$3"
+VALUE="$4"
 
 if [[ -z "$NODE" || -z "$MODE" || -z "$SENSOR_ID" ]]; then
     echo "Usage:"
-    echo "  ./alert_test.sh master --sensor 101"
-    echo "  ./alert_test.sh slave1 --no_data 202"
-    echo "  ./alert_test.sh slave2 --invalid_data 304"
+    echo "  ./alert_test.sh master --sensor 101 25"
+    echo "  ./alert_test.sh slave1 --sensor 202 50"
+    echo "  ./alert_test.sh slave2 --invalid_data 304 abc"
+    echo "  ./alert_test.sh master --no_data 101"
     exit 1
 fi
 
@@ -102,10 +116,15 @@ if [[ "$MODE" == "--no_data" ]]; then
 fi
 
 if [[ "$MODE" == "--invalid_data" ]]; then
+    if [[ -z "$VALUE" ]]; then
+        echo "Error: invalid_data requires a value (e.g., abc)"
+        exit 1
+    fi
+
     echo "[ALERT] invalid_data"
 
     CMD="INSERT INTO sensor_readings(sensor_id,value,recorded_at)
-         VALUES('$SENSOR_ID','abc',datetime('now'));"
+         VALUES('$SENSOR_ID','$VALUE',datetime('now'));"
 
     if [[ "$NODE" == "master" ]]; then
         sqlite3 "$DB" "$CMD"
@@ -113,62 +132,30 @@ if [[ "$MODE" == "--invalid_data" ]]; then
         ssh "$USERNAME@$IP" "sqlite3 $DB \"$CMD\""
     fi
 
-    echo "Inserted invalid value 'abc' for sensor $SENSOR_ID on $NODE"
+    echo "Inserted invalid value '$VALUE' for sensor $SENSOR_ID on $NODE"
     exit 0
 fi
 
-case "$TYPE" in
-    temperature)
-        VALUE=45
-        ALERT="temperature_high"
-        ;;
-    humidity)
-        echo "[ALERT] humidity_low"
-        CMD_LOW="INSERT INTO sensor_readings(sensor_id,value,recorded_at)
-                 VALUES('$SENSOR_ID',10,datetime('now'));"
+if [[ "$MODE" == "--sensor" ]]; then
+    if [[ -z "$VALUE" ]]; then
+        echo "Error: --sensor requires a numeric value"
+        exit 1
+    fi
 
-        if [[ "$NODE" == "master" ]]; then
-            sqlite3 "$DB" "$CMD_LOW"
-        else
-            ssh "$USERNAME@$IP" "sqlite3 $DB \"$CMD_LOW\""
-        fi
+    echo "[INFO] inserting value $VALUE for sensor $SENSOR_ID"
 
-        echo "[ALERT] humidity_high"
-        CMD_HIGH="INSERT INTO sensor_readings(sensor_id,value,recorded_at)
-                  VALUES('$SENSOR_ID',90,datetime('now'));"
+    CMD="INSERT INTO sensor_readings(sensor_id,value,recorded_at)
+         VALUES('$SENSOR_ID',$VALUE,datetime('now'));"
 
-        if [[ "$NODE" == "master" ]]; then
-            sqlite3 "$DB" "$CMD_HIGH"
-        else
-            ssh "$USERNAME@$IP" "sqlite3 $DB \"$CMD_HIGH\""
-        fi
+    if [[ "$NODE" == "master" ]]; then
+        sqlite3 "$DB" "$CMD"
+    else
+        ssh "$USERNAME@$IP" "sqlite3 $DB \"$CMD\""
+    fi
 
-        echo "=== DONE ==="
-        exit 0
-        ;;
-    co2)
-        VALUE=1500
-        ALERT="co2_high"
-        ;;
-    smoke)
-        VALUE=1
-        ALERT="smoke_detected"
-        ;;
-    motion)
-        VALUE=1
-        ALERT="motion_detected"
-        ;;
-esac
-
-echo "[ALERT] $ALERT"
-
-CMD="INSERT INTO sensor_readings(sensor_id,value,recorded_at)
-     VALUES('$SENSOR_ID',$VALUE,datetime('now'));"
-
-if [[ "$NODE" == "master" ]]; then
-    sqlite3 "$DB" "$CMD"
-else
-    ssh "$USERNAME@$IP" "sqlite3 $DB \"$CMD\""
+    echo "Inserted value $VALUE for sensor $SENSOR_ID on $NODE"
+    exit 0
 fi
 
-echo "=== DONE ==="
+echo "Invalid mode: $MODE"
+exit 1
