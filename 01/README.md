@@ -161,6 +161,7 @@ SLAVE2_IP=192.168.xxx.xxx
 SLAVE2_PORT=8082
 ```
 cofiguration on slave side:
+
 slave 1:
 ```
 SLAVE_PORT=8081
