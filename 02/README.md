@@ -35,7 +35,7 @@ Client → Master
                     ├── Cache hit → return to Master
                     └── Cache miss → Slave 1 SQLite
                             ├── Found → update cache → return
-                            └── Not found → going back to master and forward to Slave 2
+                            └── Not found → going back to Master and forward to Slave 2
 ```
 
 ---
@@ -190,37 +190,38 @@ This ensures minimal overhead and avoids preloading.
 ### benchmark_read.sh
 This script performs:
 
-- **Round 1:** Cold read (cache empty → SQLite)
+- **Round 1:** Cold read (cache empty → SQLite)  
 - **Round 2:** Warm read (cache populated → Memcached)
 
 ### Run Benchmark
 ```bash
 cd 02/scripts
 ./benchmark_read.sh
-./benchmark_read.sh > results.txt
 ```
 or
 ```bash
 ./benchmark_read.sh > results.txt
 ```
 
-### Expected Output Example
-```
-Round 1: Reading all sensors...
-Sensor 101 → 24.8°C (time: 12 ms)
-Sensor 102 → 25.1°C (time: 11 ms)
-...
+---
 
-Round 2: Reading all sensors...
-Sensor 101 → 24.8°C (time: 1 ms)
-Sensor 102 → 25.1°C (time: 1 ms)
-...
+## Final Benchmark Results
 
-Summary:
-SQLite average: 12.3 ms
-Memcached average: 1.1 ms
-Speedup: ~11x
-```
+### Client‑Side (curl round‑trip)
+- **Round 1 (cold):** 50 ms average  
+- **Round 2 (warm):** 20 ms average  
+- **Improvement:** 30 ms (≈ 60%)
+
+### Server‑Side (response_time_ms from JSON)
+- **Round 1 (cold):** 5.31 ms average  
+- **Round 2 (warm):** 4.78 ms average  
+- **Improvement:** 0.53 ms (≈ 10%)
+
+### Summary
+Caching provides:
+- A **significant improvement** in end‑to‑end latency (client‑side)  
+- A **moderate improvement** in server‑side processing time  
+- A **consistent reduction** in load on SQLite due to cache hits in Round 2  
 
 ---
 
@@ -232,20 +233,18 @@ Cache is **not preloaded**. It is filled only when a sensor is read for the firs
 ### When Data Comes from Cache
 - Round 2 of benchmark  
 - Any repeated request  
-- Any Master → Slave forwarded request after first lookup
+- Any Master → Slave forwarded request after first lookup  
 
 ### When Data Comes from SQLite
 - First lookup  
-- Cache eviction (rare unless configured)  
+- Cache eviction  
 - Cache flush  
 - Memcached restart  
 
 ### Why Round 2 Might Not Hit Cache
-Possible reasons:
-
-- Key expiration (if TTL = 0 → no expiration)  
+- Key expiration (if TTL configured)  
 - Cache flush  
-- Memcached restarted  
+- Memcached restart  
 - Incorrect key format  
 - Cache disabled in config  
 
@@ -262,14 +261,3 @@ curl -s "http://MASTER_IP:MASTER_PORT/query?sensor_type=temperature&sensor_id=10
 ```bash
 curl -s "http://SLAVE1_IP:SLAVE1_PORT/query?sensor_type=humidity&sensor_id=302"
 ```
-
----
-
-## Security Considerations
-
-### Recommended Improvements
-- Use **TLS encryption** for API traffic  
-- Add **API authentication**  
-- Validate inputs to prevent **SQL injection**  
-- Restrict Memcached to local access only  
-- Add rate limiting  

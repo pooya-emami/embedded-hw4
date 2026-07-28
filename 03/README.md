@@ -1,14 +1,14 @@
 # Part 3: MQTT Implementation
 
 ## Project Overview
-Part 3 extends the distributed sensor‑database system by adding **MQTT messaging** while **preserving the caching layer (Memcached)** introduced in Part 2.  
-The Master and Slave nodes now support three layers:
+Part 3 extends the distributed sensor‑database system by adding **MQTT messaging** while keeping the **Memcached caching layer** from Part 2.  
+The Master and Slave nodes now operate with three layers:
 
 1. **Memcached** – fast in‑memory cache  
 2. **SQLite** – persistent storage  
-3. **MQTT Broker (Mosquitto)** – message‑based sensor query/response  
+3. **Mosquitto MQTT Broker** – publish/subscribe request handling  
 
-MQTT enables clients to request sensor values through publish/subscribe topics instead of HTTP.
+MQTT allows clients to request sensor values using topics instead of HTTP.
 
 ---
 
@@ -16,9 +16,9 @@ MQTT enables clients to request sensor values through publish/subscribe topics i
 
 ### Components
 ```
-Client (mosquitto_pub/mosquitto_sub)
+Client (mosquitto_pub / mosquitto_sub)
         ↓
-MQTT Broker (Mosquitto)
+Mosquitto Broker
         ↓
 Master Node
    ├── Memcached
@@ -36,8 +36,8 @@ Slave 1 → Slave 2 (fallback chain)
 3. Master performs:
    - Cache lookup  
    - SQLite lookup  
-   - Slave fallback  
-4. Master publishes response to:
+   - Slave fallback chain  
+4. Master publishes the response to:
    ```
    sensors/response/<sensor_type>/<sensor_id>
    ```
@@ -55,7 +55,7 @@ sudo apt install -y \
     mosquitto-clients
 ```
 
-### Install Part 2 Dependencies (Memcached + SQLite)
+### Install Part 2 Dependencies
 ```bash
 sudo apt install -y sqlite3 libsqlite3-dev libmemcached-dev memcached
 ```
@@ -182,10 +182,10 @@ find . -type f -name "*.sh" -exec chmod +x {} \;
 ./mqtt_init_master.sh
 ```
 
-This script typically:
-- Connects to Mosquitto  
-- Subscribes Master to request topics  
-- Prepares response publishing  
+This script:
+- Connects to the Mosquitto broker  
+- Subscribes the Master to request topics  
+- Prepares the Master to publish responses  
 
 ---
 
@@ -261,23 +261,35 @@ The script performs:
 #### Round 1 (Cold Read)
 - Cache empty  
 - SQLite + fallback chain  
-- MQTT round‑trip  
+- Full MQTT round‑trip  
 
 #### Round 2 (Warm Read)
 - Cache populated  
 - Memcached hit  
 - Faster MQTT response  
 
-### Expected Output Example
-```
-Round 1:
-temperature/101 → 24.8°C (MQTT time: 18 ms)
+---
 
-Round 2:
-temperature/101 → 24.8°C (MQTT time: 3 ms)
+## Final Benchmark Results
 
-Speedup: ~6x
-```
+### Client‑Side (MQTT round‑trip)
+- **Round 1 (cold):** 100 ms average  
+- **Round 2 (warm):** 49 ms average  
+- **Improvement:** 51 ms  
+- **Improvement percentage:** ~51%
+
+### Server‑Side (response_time_ms)
+- **Round 1 (cold):** 40.02 ms average  
+- **Round 2 (warm):** 1.54 ms average  
+- **Improvement:** 38.48 ms  
+- **Improvement percentage:** ~96%
+
+### Summary
+MQTT combined with caching provides:
+- A large reduction in server‑side processing time  
+- Noticeably faster client‑side response times  
+- Consistent warm‑cache behavior across all sensors  
+- Minimal load on SQLite during warm reads  
 
 ---
 
