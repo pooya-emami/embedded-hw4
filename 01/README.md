@@ -29,9 +29,9 @@ This is the base implementation of a distributed database system for sensor data
 1. **Operator** → Master Node (HTTP Request)
 2. **Master Node** → Local SQLite (Check if data exists)
 3. **If NOT found**: Master → Slave 1 (Forward request)
-4. **If NOT found**: Slave 1 → Slave 2 (Forward request)
-5. **If found**: Response propagates back: Slave N → ... → Slave 1 → Master → Operator
-6. **If NOT found anywhere**: Master returns "Data not found" message
+4. **If NOT found**: Master → Slave 2 (Forward request)
+5. **If found**: Response propagates back: Slave 2 or Slave 1 → Master → Client
+6. **If NOT found anywhere**: Master returns "Sensor data not found" message
 
 ## Prerequisites
 
@@ -72,22 +72,31 @@ sudo cp mongoose.h /usr/local/include/
 
 ## Project Structure
 ```
-01/
-├── master/
-│   ├── main.c
-│   ├── Makefile
-│   ├── master_init_db.sh
-│   └── config.example
-├── slave/
-│   ├── main.c
-│   ├── Makefile
-│   ├── slave_init_db.sh
-│   └── config.example
-├── scripts/
-│   ├── build_and_run.sh
-│   └── test_requests.sh
-├── report.md
-└── README.md
+   01
+   │   README.md
+   │
+   ├───data
+   │       master_sensors.csv
+   │       slave1_sensors.csv
+   │       slave2_sensors.csv
+   │
+   ├───master
+   │       config.bonus
+   │       config.example
+   │       main.cpp
+   │       Makefile
+   │       master_init_db.sh
+   │
+   ├───scripts
+   │       build_and_run.sh
+   │       test_requests.sh
+   │
+   └───slave
+           config.example
+           main.cpp
+           Makefile
+           slave1_init_db.sh
+           slave2_init_db.sh
 ```
 
 ## Database Structure
@@ -115,43 +124,30 @@ The initialization scripts use provided CSV/JSON data files to populate the data
 
 ## Compilation and Build
 
-### Building All Components
+### Run and Build All Components 
+Each command below must be done separately on each node.
 ```bash
 # Navigate to part 1 directory
-cd 01/
+cd 01/scripts
 
 # Build and run all nodes
-./scripts/build_and_run.sh master
-./scripts/build_and_run.sh slave1
-./scripts/build_and_run.sh slave2
+./build_and_run.sh master
+./build_and_run.sh slave1
+./build_and_run.sh slave2
 ```
 
 ### Build with Database Initialization
 ```bash
 # Build nodes and initialize databases
-./scripts/build_and_run.sh master --dbgen
-./scripts/build_and_run.sh slave1 --dbgen
-./scripts/build_and_run.sh slave2 --dbgen
-```
-
-### Manual Build
-```bash
-# Build master
-cd master
-make clean
-make
-./master --config config.example
-
-# Build slave
-cd ../slave
-make clean
-make
-./slave --config config.example
+./build_and_run.sh master --dbgen
+./build_and_run.sh slave1 --dbgen
+./build_and_run.sh slave2 --dbgen
 ```
 
 ## Configuration
 
 ### Configuration File Format (config.example)
+This is just a template and the real values are provided in the config.example
 ```
 {
     "port": 8080,
@@ -172,34 +168,15 @@ make
 - **master_port**: Master node port (for slaves)
 - **slaves**: List of slave nodes with host and port
 
-## Running the System
-
-### Start Master Node
-```bash
-cd master
-./master --config config.example
-```
-
-### Start Slave Nodes
-```bash
-cd slave
-./slave --config config.example
-```
-
-### Using Build Script
-```bash
-# Build and run with config file
-./scripts/build_and_run.sh master config.example
-./scripts/build_and_run.sh slave1 config.example
-./scripts/build_and_run.sh slave2 config.example
-```
+## 
 
 ## Testing the System
 
 ### Automated Testing
 ```bash
 # Run all test requests
-./scripts/test_requests.sh
+cd 01/scripts
+./test_requests.sh
 ```
 
 ### Manual Testing with curl
@@ -253,7 +230,8 @@ socat TCP-LISTEN:9081,fork,reuseaddr TCP:slave1_ip:8081 &
 socat TCP-LISTEN:9082,fork,reuseaddr TCP:slave2_ip:8082 &
 
 # Run master with bonus config
-./scripts/build_and_run.sh master config.bonus
+cd 01/scripts
+./build_and_run.sh master config.bonus
 
 # Stop socat when done
 pkill socat
@@ -274,37 +252,3 @@ pkill socat
 6. **Logging**: Implement comprehensive audit logging
 7. **Data Encryption**: Encrypt sensitive data at rest
 8. **Backup Strategy**: Regular database backups
-
-## Troubleshooting
-
-### Common Issues
-
-**1. Port already in use**
-```bash
-# Find process using port
-sudo lsof -i :8080
-# Kill process
-sudo kill -9 <PID>
-```
-
-**2. Database initialization fails**
-```bash
-# Check if data files exist
-ls -la data/
-# Run init script with debug
-bash -x master_init_db.sh
-```
-
-**3. Connection refused**
-```bash
-# Verify nodes are running
-ps aux | grep master
-ps aux | grep slave
-# Check network connectivity
-ping slave1_ip
-```
-
-## References
-- [Mongoose Library Documentation](https://mongoose.ws/documentation/)
-- [SQLite Documentation](https://www.sqlite.org/docs.html)
-- [curl Documentation](https://curl.se/docs/)
