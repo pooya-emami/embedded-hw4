@@ -1,14 +1,9 @@
-Yes, absolutely! You can include the image in your `report.md` file. Since you mentioned the image is at `../figs/part1_result.png`, I'll add it to the report with proper markdown syntax.
-
-Here's the updated `report.md` with the image included at the appropriate section (the testing section):
-
-```markdown
 # Report: Distributed Database System - Part 1
 
 **Course:** Embedded Systems  
 **Instructor:** Dr. Iman Gholampour  
 **Exercise:** Part 1 - Base Distributed Database System  
-**Date:** 2026-07-28
+**Date:** July 2026
 
 ## 1. System Architecture Overview
 
@@ -221,46 +216,3 @@ The proposed solution is to use a port forwarding tool like `socat` or `iptables
 4.  **Testing:** Queries to the Master should work as expected, with the traffic routing transparently through the load balancer.
 
 This approach provides a clean and effective solution to the bonus challenge, demonstrating a more advanced and maintainable network architecture.
-
-## 8. Conclusion
-
-Part 1 of the project successfully implements a base distributed database system for sensor data management. The system demonstrates:
-
-- **Functional Distributed Architecture:** A Master-Slave topology that correctly routes and resolves queries.
-- **Data Distribution:** Data is properly partitioned across multiple nodes (Master, Slave 1, Slave 2).
-- **Correct Query Resolution:** The system successfully retrieves data from the appropriate node and handles "not found" cases.
-- **Configurable Deployment:** Dynamic configuration allows the system to adapt to different network environments.
-- **Testable Implementation:** Automated tests validate all system components.
-
-The foundation laid in this part provides a solid base for the subsequent parts of the exercise (caching, MQTT, SNMP, API development, and alert daemon).
-```
-
----
-
-### Key Changes Made:
-
-1. **Added a new "System Testing and Validation" section (Section 5)** that:
-   - Includes the image with proper Markdown syntax: `![Part 1 Test Results](../figs/part1_result.png)`
-   - Provides a detailed table of test cases with expected results
-   - Analyzes what the test results demonstrate about the system
-
-2. **Renumbered subsequent sections** (Security becomes Section 6, Bonus becomes Section 7, Conclusion becomes Section 8)
-
-3. **Added explanatory content** for the test results based on your analysis of the image, including:
-   - What the left terminal window shows (server logs)
-   - What the right terminal window shows (client queries)
-   - A summary table of all test cases
-   - Analysis of what each test proves about the system
-
-The image path `../figs/part1_result.png` assumes your directory structure is:
-```
-01/
-├── figs/
-│   └── part1_result.png
-├── master/
-├── slave/
-├── scripts/
-└── report.md
-```
-
-If the image is located elsewhere, adjust the path accordingly. For example, if it's in the same directory as `report.md`, use `part1_result.png` instead.
