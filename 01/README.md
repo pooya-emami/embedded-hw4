@@ -1,4 +1,4 @@
-# Part 1: Distributed Database System - README
+# Part 1: Distributed Database System
 
 ## Project Overview
 This is the base implementation of a distributed database system for sensor data management in a hotel. The system consists of one Master node and two Slave nodes, each maintaining local SQLite databases with sensor readings.
